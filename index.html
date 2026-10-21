@@ -1,0 +1,878 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Termin-Probe">
+<meta name="theme-color" content="#EEF0EA">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+<title>A1 Termin-Probe</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&family=Source+Serif+4:ital,opsz,wght@1,8..60,400&display=swap">
+<style>
+/* Layout: one-screen app, header + scrolling form-sheet + bottom tab bar. Cards read like fields on a German Amtsformular. */
+:root{
+  --paper:#EEF0EA; --sheet:#FFFFFF; --field:#F6F7F2; --ink:#18212B; --muted:#55606B; --faint:#8A929B; --rule:#D6D9CF;
+  --accent:#B3132B; --on-accent:#FFFFFF; --accent-soft:#F7E2E5;
+  --ok:#22694A; --ok-soft:#DFEEE5; --warn:#8F5300; --warn-soft:#F5E9D5;
+  --f-sans:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-cond:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#101418; --sheet:#191E24; --field:#14181D; --ink:#E8EAE5; --muted:#A1A9B2; --faint:#6F7780; --rule:#2A3138;
+  --accent:#F0566B; --on-accent:#1C0A0E; --accent-soft:#3B1A21;
+  --ok:#6CC59A; --ok-soft:#173028; --warn:#F0B25C; --warn-soft:#352812; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#101418; --sheet:#191E24; --field:#14181D; --ink:#E8EAE5; --muted:#A1A9B2; --faint:#6F7780; --rule:#2A3138;
+  --accent:#F0566B; --on-accent:#1C0A0E; --accent-soft:#3B1A21;
+  --ok:#6CC59A; --ok-soft:#173028; --warn:#F0B25C; --warn-soft:#352812; color-scheme:dark}
+html{height:100%;box-sizing:border-box}
+*,*::before,*::after{box-sizing:inherit}
+body{height:100%;margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 var(--f-sans);-webkit-text-size-adjust:100%}
+#app{height:100%;display:flex;flex-direction:column;max-width:640px;margin:0 auto}
+.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{padding-block:12px 10px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--rule)}
+.brand{font:600 20px/1 var(--f-cond);letter-spacing:.02em;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.stamp{display:inline-grid;place-items:center;width:30px;height:30px;border:2px solid var(--accent);color:var(--accent);border-radius:50%;font:600 12px/1 var(--f-cond);transform:rotate(-8deg)}
+.chip{font:500 13px/1 var(--f-cond);letter-spacing:.04em;text-transform:uppercase;padding:6px 8px;border-radius:6px;background:var(--field);color:var(--muted);border:1px solid var(--rule);white-space:nowrap}
+.chip.hot{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.chip.ok{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.chip.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.sp{margin-left:auto}
+main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-block:14px 24px}
+nav.tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--rule);background:var(--sheet)}
+.tab{appearance:none;border:0;background:none;color:var(--muted);padding:8px 2px 10px;font:500 13px/1.1 var(--f-cond);letter-spacing:.04em;text-transform:uppercase;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;min-height:54px}
+.tab svg{width:22px;height:22px}
+.tab[aria-current="page"]{color:var(--accent)}
+.tab[aria-current="page"] span{border-bottom:2px solid var(--accent)}
+h2.h{font:600 26px/1.1 var(--f-cond);text-transform:uppercase;letter-spacing:.01em;margin:4px 0 2px;text-wrap:balance}
+.sub{color:var(--muted);margin:0 0 14px;font-size:15px}
+.lab{font:500 12px/1 var(--f-cond);letter-spacing:.1em;text-transform:uppercase;color:var(--faint);display:flex;gap:8px;align-items:center}
+.lab b{color:var(--accent);font-weight:600}
+.list{display:flex;flex-direction:column;background:var(--sheet);border:1px solid var(--rule);border-radius:12px;overflow:hidden}
+.row{appearance:none;border:0;background:none;color:inherit;text-align:left;font:inherit;display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 14px;border-top:1px solid var(--rule);cursor:pointer;width:100%}
+.row:first-child{border-top:0}
+.row .no{font:600 22px/1 var(--f-cond);color:var(--faint);font-variant-numeric:tabular-nums}
+.row .t1{font-weight:600;font-size:16px;line-height:1.25}
+.row .t2{font:italic 400 14px/1.3 var(--f-serif);color:var(--muted)}
+.row .ct{font:500 14px/1 var(--f-cond);color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
+.bar{height:3px;background:var(--rule);border-radius:2px;margin-top:6px;overflow:hidden;display:flex}
+.bar i{display:block;height:100%;background:var(--ok)}
+.bar i.r{background:var(--warn)}
+.card{background:var(--sheet);border:1px solid var(--rule);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.qrow{display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;align-items:start}
+.de{font:500 23px/1.3 var(--f-sans);margin:0;text-wrap:pretty}
+.de.a{font-size:21px}
+.tr{font:italic 400 16px/1.45 var(--f-serif);color:var(--muted);margin:0}
+.ans{background:var(--field);border:1px dashed var(--rule);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.or{display:block;font:500 12px/1.6 var(--f-cond);letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.tk{border-bottom:2px solid var(--ok-soft)}
+.tk.miss{color:var(--warn);background:var(--warn-soft);border:0;border-radius:4px;padding:0 4px;font-size:.85em}
+.w{font:italic 400 .62em var(--f-serif);color:var(--muted);margin-left:4px}
+.spell{display:block;font:600 30px/1.1 var(--f-cond);letter-spacing:.12em}
+.note{font-size:14px;color:var(--muted);border-top:1px solid var(--rule);padding-top:10px;margin:0}
+.play{appearance:none;width:44px;height:44px;border-radius:50%;border:0;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;cursor:pointer;flex:none}
+.play.sm{width:34px;height:34px;background:var(--accent-soft);color:var(--accent)}
+.play svg{width:18px;height:18px}
+.play.big{width:96px;height:96px}
+.play.big svg{width:38px;height:38px}
+.play.on{animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(.94)}}
+@media (prefers-reduced-motion:reduce){.play.on{animation:none}}
+.btn{appearance:none;font:600 15px/1 var(--f-sans);color:var(--ink);background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:13px 14px;cursor:pointer;min-height:46px;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-align:center}
+.btn.pri{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.btn.ok{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.btn.again{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.btn.ghost{background:none;border-color:transparent;color:var(--muted)}
+.btn.wide{width:100%}
+.btn svg{width:18px;height:18px}
+.btn[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.hrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.navr{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px}
+.pos{text-align:center;font:500 15px/1 var(--f-cond);color:var(--muted);font-variant-numeric:tabular-nums;letter-spacing:.05em}
+details.var summary{cursor:pointer;color:var(--muted);font-size:14px;list-style:none}
+details.var summary::before{content:"+ ";color:var(--accent);font-weight:600}
+details.var[open] summary::before{content:"– "}
+.vline{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;align-items:center;margin-top:8px;font-size:16px}
+.hint{font-size:14px;color:var(--muted);display:flex;gap:10px;align-items:center;background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:10px 12px}
+.hint p{margin:0;min-width:0}
+.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.seg .btn{padding:10px 6px;min-height:42px;font-size:14px}
+.big-center{display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px 0 6px;text-align:center}
+.dots{display:flex;gap:4px;flex-wrap:wrap}
+.dots i{width:14px;height:6px;border-radius:3px;background:var(--rule)}
+.dots i.d{background:var(--ink)}
+.dots i.g{background:var(--ok)}
+.dots i.h{background:var(--warn)}
+.score{font:600 56px/1 var(--f-cond);font-variant-numeric:tabular-nums}
+.bub{appearance:none;font:inherit;color:inherit;text-align:left;border:1px solid var(--rule);background:var(--sheet);border-radius:12px;padding:10px 12px;cursor:pointer;width:88%;display:flex;flex-direction:column;gap:4px}
+.bub.s{align-self:flex-end;background:var(--field);border-style:dashed}
+.bub.cur{border-color:var(--accent);border-style:solid}
+.bub .de{font-size:18px}
+.bub .tr{font-size:14px}
+.who{font:500 12px/1 var(--f-cond);letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.bub.s .who{color:var(--accent)}
+.blank{color:var(--faint);font-style:italic}
+form.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fld.full{grid-column:1/-1}
+.fld label{font:500 12px/1.2 var(--f-cond);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.fld input,.fld select{font:500 16px/1.2 var(--f-sans);color:var(--ink);background:var(--field);border:1px solid var(--rule);border-radius:8px;padding:10px;width:100%;min-width:0;min-height:44px}
+.set{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--rule)}
+.set:first-child{border-top:0}
+.set input[type=range]{width:46%;accent-color:var(--accent)}
+.set input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent)}
+.set select{max-width:55%;font:inherit;padding:8px;border-radius:8px;border:1px solid var(--rule);background:var(--field);color:var(--ink)}
+.info ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.info a{color:var(--accent)}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 14px;border-radius:10px;font-size:14px;z-index:20;max-width:calc(100% - 32px)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+
+</head>
+<body>
+<div id="app">
+  <header class="top gut">
+    <div class="brand" lang="de"><span class="stamp" aria-hidden="true">A1</span>Termin-Probe</div>
+    <span class="sp"></span>
+    <span id="tchip" class="chip" style="text-transform:none">§ 18c AufenthG</span>
+  </header>
+  <main id="view" class="gut" aria-live="polite"></main>
+  <nav class="tabs gut" aria-label="Bölümler">
+    <button class="tab" data-a="tab" data-v="study" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="5" width="13" height="15" rx="2"/><path d="M8 3h11a1 1 0 0 1 1 1v13"/></svg><span>Çalış</span></button>
+    <button class="tab" data-a="tab" data-v="iv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 9a6 6 0 1 1 9 5.2c-1.5.9-2 1.8-2 3.3a3 3 0 0 1-5 2.2"/><path d="M10 9a2 2 0 1 1 3 1.7"/></svg><span>Mülakat</span></button>
+    <button class="tab" data-a="tab" data-v="sc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h11v8H8l-4 3z"/><path d="M15 9h5v8l-3-2h-6v-2"/></svg><span>Senaryo</span></button>
+    <button class="tab" data-a="tab" data-v="me"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.2"/><path d="M5.8 16c.6-1.6 1.8-2.4 3.2-2.4s2.6.8 3.2 2.4M15 10h3M15 13h3"/></svg><span>Bilgilerim</span></button>
+  </nav>
+</div>
+
+<script>
+/* ---------- Kişisel alanlar ---------- */
+var FIELDS=[
+ {k:"vorname",l:"Ad",ph:"Özgür",def:"Özgür",sp:"Vorname"},
+ {k:"nachname",l:"Soyad",ph:"Soyadın",sp:"Nachname"},
+ {k:"gebdatum",l:"Doğum tarihi",type:"date",def:"1987-03-05"},
+ {k:"gebort",l:"Doğum yeri",ph:"Izmir",def:"Izmir",sp:"Izmir"},
+ {k:"groesse",l:"Boy (cm)",type:"number",def:"189"},
+ {k:"augen",l:"Göz rengi",opts:[["","— seç —"],["braune","kahverengi"],["dunkelbraune","koyu kahverengi"],["blaue","mavi"],["grüne","yeşil"],["graue","gri"],["haselnussbraune","ela"]],def:"",sp:"braune"},
+ {k:"stadtteil",l:"Semt (Stadtteil)",ph:"Eimsbüttel",sp:"Stadtteil"},
+ {k:"strasse",l:"Sokak ve no",ph:"Musterstraße 12",sp:"Straße und Hausnummer"},
+ {k:"plz",l:"Posta kodu",ph:"20259",type:"tel",sp:"Postleitzahl"},
+ {k:"qm",l:"Ev (m²)",ph:"85",type:"number",sp:"achtzig"},
+ {k:"zimmer",l:"Oda sayısı",ph:"3",type:"number",sp:"drei"},
+ {k:"anreise",l:"Randevuya nasıl gideceksin",opts:[["mit der U-Bahn","U-Bahn ile"],["mit der S-Bahn","S-Bahn ile"],["mit dem Bus","otobüsle"],["mit dem Auto","arabayla"],["mit dem Fahrrad","bisikletle"],["zu Fuß","yürüyerek"]],def:"mit der U-Bahn"},
+ {k:"arbeitsweg",l:"İşe yol (dk)",ph:"30",type:"number",sp:"dreißig"},
+ {k:"firma",l:"Şirket",ph:"Firmenname",sp:"Firmenname"},
+ {k:"fach",l:"Bölüm (Almanca)",ph:"Informatik",sp:"Wirtschaft"},
+ {k:"uniort",l:"Nerede okudun",ph:"in Istanbul",sp:"in der Türkei"},
+ {k:"kasse",l:"Sağlık sigortası",ph:"TK",sp:"Krankenkasse"},
+ {k:"kinder",l:"Çocuk",opts:[["","— seç —"],["Nein, wir haben keine Kinder.","Hayır, çocuğumuz yok."],["Ja, wir haben ein Kind.","Evet, bir çocuğumuz var."],["Ja, wir haben zwei Kinder.","Evet, iki çocuğumuz var."]],def:"",sp:"Nein, wir haben keine Kinder."},
+ {k:"frau",l:"Eşinin adı",def:"Şevval",sp:"Şevval"},
+ {k:"hund",l:"Köpeğinin adı",def:"Lülü",sp:"Lülü"},
+ {k:"kartegueltig",l:"Blue Card bitiş tarihi",type:"date"},
+ {k:"termindatum",l:"Randevu tarihi",type:"date"},
+ {k:"termin",l:"Randevu saati",type:"time",sp:"zehn"}
+];
+
+/* ---------- Soru bankası: [soru (| varyant), Türkçe, cevap ( / alternatif), Türkçe, bayrak, not] ---------- */
+/* bayrak: c = sık sorulan, s = kendi durumuna göre seç, p = Türkçe'den Almanca'ya söyleme kartı */
+var SECS=[
+{id:"top",de:"Häufig gefragt",tr:"Deneyimlere göre sık gelenler",items:[
+["Wie alt sind Sie? | Wie alt bist du?","Kaç yaşındasınız?","Ich bin {alter} Jahre alt.","{alter} yaşındayım.","c"],
+["Wo wohnen Sie? | In welcher Stadt wohnen Sie?","Nerede yaşıyorsunuz?","Ich wohne in Hamburg, in {stadtteil}.","Hamburg'da, {stadtteil} semtinde yaşıyorum.","c"],
+["Wie sind Sie heute hierhergekommen? | Wie sind Sie heute hergekommen? | Sind Sie mit dem Bus oder mit der Bahn gekommen?","Bugün buraya nasıl geldiniz?","Ich bin {anreise} gekommen.","{anreise} geldim.","cs","O gün gerçekten nasıl gittiysen onu söyle (Bilgilerim'den değiştir)."],
+["Was sind Sie von Beruf? | Was machen Sie beruflich? | Was ist Ihr Beruf?","Mesleğiniz ne?","Ich arbeite im Bankensektor, mit digitalen Produkten.","Bankacılık sektöründe, dijital ürünlerle çalışıyorum.","c"],
+["Wo arbeiten Sie? | Bei welcher Firma arbeiten Sie?","Nerede çalışıyorsunuz?","Ich arbeite bei {firma}.","{firma} şirketinde çalışıyorum.","c"],
+["Wann sind Sie nach Deutschland gekommen? | Seit wann leben Sie in Deutschland?","Almanya'ya ne zaman geldiniz?","Im Februar 2023.","Şubat 2023'te.","c"],
+["Warum sind Sie nach Deutschland gekommen? | Warum leben Sie in Deutschland?","Almanya'ya neden geldiniz?","Wegen meiner Arbeit.","İşim nedeniyle.","c"],
+["Wie groß sind Sie? | Wie groß sind Sie ungefähr?","Boyunuz kaç?","Ich bin {groesse} groß.","Boyum {groesse}.","c","Başvuru formunda boy ve göz rengi alanları var; memur formu kontrol ederken sorabiliyor."],
+["Welche Augenfarbe haben Sie? | Was für eine Augenfarbe haben Sie? | Sind Ihre Augen braun oder blau?","Gözlerinizin rengi ne?","Ich habe {augen} Augen.","Gözlerim {augen}.","c"],
+["Was haben Sie heute gefrühstückt? | Was essen Sie zum Frühstück?","Bugün kahvaltıda ne yediniz?","Ich habe Brot und Eier gegessen und Tee getrunken. / Ich habe heute nicht gefrühstückt.","Ekmek ve yumurta yedim, çay içtim. / Bugün kahvaltı yapmadım.","cs"],
+["Seit wann arbeiten Sie in Deutschland? | Wie lange arbeiten Sie schon in Deutschland?","Almanya'da ne zamandır çalışıyorsunuz?","Seit Februar 2023. Das sind ungefähr {monate} Monate.","Şubat 2023'ten beri. Yaklaşık {monate} ay ediyor.","c"],
+["Haben Sie ein A1-Zertifikat? | Können Sie ein bisschen Deutsch?","A1 belgeniz var mı? / Biraz Almanca biliyor musunuz?","Noch nicht. Aber ich lerne Deutsch und spreche ein bisschen.","Henüz yok. Ama Almanca öğreniyorum ve biraz konuşuyorum.","c"],
+["Wann haben Sie Ihre Blaue Karte bekommen?","Blue Card'ınızı ne zaman aldınız?","Am 6. November 2023.","6 Kasım 2023'te.","c","Kartı fiziksel olarak teslim aldığın tarih."]
+]},
+{id:"gold",de:"Goldene Sätze",tr:"İlk ezberlenecek 20 cümle (Türkçe → Almanca)",items:[
+["Kalıcı oturum iznine başvurmak istiyorum.","","Ich möchte eine Niederlassungserlaubnis beantragen.","","p"],
+["EU Blue Card sahibiyim.","","Ich habe eine Blaue Karte EU.","","p"],
+["Şubat 2023'ten beri Almanya'da çalışıyorum.","","Ich arbeite seit Februar 2023 in Deutschland.","","p"],
+["Kartımı 6 Kasım 2023'te teslim aldım.","","Ich habe meine Karte am 6. November 2023 bekommen.","","p"],
+["Türkiye'den geliyorum.","","Ich komme aus der Türkei.","","p"],
+["Hamburg'da yaşıyorum.","","Ich wohne in Hamburg.","","p"],
+["{alter} yaşındayım.","","Ich bin {alter} Jahre alt.","","p"],
+["Bankacılık sektöründe çalışıyorum.","","Ich arbeite im Bankensektor.","","p"],
+["Dijital ürünlerle çalışıyorum.","","Ich arbeite mit digitalen Produkten.","","p"],
+["Türkçe, İngilizce ve biraz Almanca konuşuyorum.","","Ich spreche Türkisch, Englisch und ein bisschen Deutsch.","","p"],
+["Almanca öğreniyorum.","","Ich lerne Deutsch.","","p"],
+["Henüz A1 sertifikam yok.","","Ich habe noch kein A1-Zertifikat.","","p"],
+["Almancamı göstermek istiyorum.","","Ich möchte mein Deutsch zeigen.","","p"],
+["Belgelerim burada.","","Hier sind meine Unterlagen.","","p"],
+["Bir dakika lütfen.","","Einen Moment, bitte.","","p"],
+["Daha yavaş konuşabilir misiniz?","","Können Sie bitte langsamer sprechen?","","p"],
+["Tekrar eder misiniz?","","Können Sie das bitte wiederholen?","","p"],
+["Soruyu anlamadım.","","Ich habe die Frage nicht verstanden.","","p"],
+["Hangi belge eksik?","","Welche Unterlage fehlt?","","p"],
+["Çok teşekkürler. Hoşça kalın.","","Vielen Dank. Auf Wiedersehen.","","p"]
+]},
+{id:"begr",de:"Begrüßung",tr:"Karşılama ve ilk temas",items:[
+["Guten Morgen. Wie geht es Ihnen? | Guten Tag. Wie geht's?","Günaydın. Nasılsınız?","Guten Morgen. Danke, gut. Und Ihnen?","Günaydın. Teşekkürler, iyiyim. Siz nasılsınız?","c"],
+["Wie heißen Sie? | Wie ist Ihr Name?","Adınız ne?","Ich heiße {vorname} {nachname}.","Benim adım {vorname} {nachname}.","c"],
+["Haben Sie heute einen Termin?","Bugün randevunuz var mı?","Ja, ich habe heute einen Termin.","Evet, bugün randevum var.",""],
+["Um wie viel Uhr ist Ihr Termin? | Wann ist Ihr Termin?","Randevunuz saat kaçta?","Um {termin} Uhr.","Saat {termin}.",""],
+["Was kann ich für Sie tun? | Warum sind Sie heute hier?","Size nasıl yardımcı olabilirim? / Bugün neden buradasınız?","Ich möchte eine Niederlassungserlaubnis beantragen.","Kalıcı oturum iznine başvurmak istiyorum.","c"],
+["Was möchten Sie beantragen?","Neye başvurmak istiyorsunuz?","Eine Niederlassungserlaubnis, bitte.","Kalıcı oturum izni, lütfen.",""],
+["Haben Sie Ihren Pass dabei? | Kann ich bitte Ihren Pass sehen?","Pasaportunuz yanınızda mı? / Pasaportunuzu görebilir miyim?","Ja, natürlich. Hier ist mein Pass.","Evet, tabii. İşte pasaportum.","c"],
+["Haben Sie die Unterlagen mitgebracht? | Haben Sie alle Unterlagen dabei?","Belgeleri getirdiniz mi?","Ja, hier sind meine Unterlagen.","Evet, belgelerim burada.","c"],
+["Sind Sie allein gekommen?","Tek başınıza mı geldiniz?","Ja, ich bin allein gekommen. / Nein, mit meiner Frau.","Evet, tek başıma geldim. / Hayır, eşimle.","s"],
+["Bitte setzen Sie sich. | Möchten Sie sich setzen?","Lütfen oturun.","Danke schön.","Çok teşekkürler.",""],
+["Verstehen Sie mich gut?","Beni iyi anlıyor musunuz?","Ja, ich verstehe Sie. Bitte sprechen Sie langsam.","Evet, sizi anlıyorum. Lütfen yavaş konuşun.",""],
+["Sollen wir Deutsch oder Englisch sprechen? | Können wir Deutsch sprechen?","Almanca mı İngilizce mi konuşalım?","Gern auf Deutsch. Mein Deutsch ist einfach.","Memnuniyetle Almanca. Almancam basit.","c","Almanca'yı seçmek, A1'i yerinde göstermen için fırsat."],
+["Sind Sie bereit? | Können wir anfangen?","Hazır mısınız? / Başlayabilir miyiz?","Ja, ich bin bereit.","Evet, hazırım.",""]
+]},
+{id:"pers",de:"Persönliche Angaben",tr:"Kimlik ve kişisel bilgiler",items:[
+["Wie ist Ihr Vorname?","Adınız ne?","Mein Vorname ist {vorname}.","Adım {vorname}.","c"],
+["Wie ist Ihr Nachname? | Wie ist Ihr Familienname?","Soyadınız ne?","Mein Nachname ist {nachname}.","Soyadım {nachname}.","c"],
+["Können Sie Ihren Namen buchstabieren? | Buchstabieren Sie bitte Ihren Namen.","Adınızı harf harf söyler misiniz?","{spell}","{spelltr}","c","Almanca harf adları: Ö = O-Umlaut, Ü = U-Umlaut, Ş = S mit Häkchen, Ç = C mit Häkchen, Ğ = G mit Bogen, ı = I ohne Punkt."],
+["Wann sind Sie geboren? | Was ist Ihr Geburtsdatum?","Ne zaman doğdunuz?","Am {gebdatum}.","{gebdatum}.","c"],
+["Wo sind Sie geboren? | Was ist Ihr Geburtsort?","Nerede doğdunuz?","Ich bin in {gebort} geboren.","Doğum yerim {gebort}.","c"],
+["Welche Staatsangehörigkeit haben Sie? | Welche Nationalität haben Sie?","Hangi ülkenin vatandaşısınız?","Ich bin Türke. / Ich habe die türkische Staatsangehörigkeit.","Türküm. / Türk vatandaşıyım.",""],
+["Wie ist Ihr Familienstand? | Sind Sie verheiratet?","Medeni durumunuz? / Evli misiniz?","Ich bin verheiratet.","Evliyim.","c"],
+["Haben Sie einen gültigen Reisepass?","Geçerli pasaportunuz var mı?","Ja, mein Reisepass ist gültig.","Evet, pasaportum geçerli.",""],
+["Hatten Sie früher einen anderen Namen? | Haben Sie einen anderen Namen?","Önceden farklı bir adınız var mıydı?","Nein, ich habe keinen anderen Namen.","Hayır, başka adım yok.","s","Formda 'Geburtsname / frühere Namen' alanı var."],
+["Wie ist Ihre Telefonnummer?","Telefon numaranız?","Meine Nummer ist null, eins, fünf … [rakam rakam]","Numaram … [rakam rakam söyle]","s","Numara genelde tek tek okunur: null, eins, fünf, sieben …"],
+["Wie ist Ihre E-Mail-Adresse? | Wie lautet Ihre E-Mail-Adresse?","E-posta adresiniz?","Meine E-Mail-Adresse ist … [adres]","E-posta adresim …","s","@ = at, Nokta = Punkt, - = Bindestrich, _ = Unterstrich."],
+["Wie ist Ihre Adresse? | Wo genau wohnen Sie?","Adresiniz ne?","Ich wohne in der {strasse}, {plz} Hamburg.","{strasse}, {plz} Hamburg adresinde oturuyorum.","c","Sokak adıyla 'in der … straße' denir: Ich wohne in der Musterstraße 12."],
+["Sind diese Angaben richtig? | Stimmt das so?","Bu bilgiler doğru mu?","Ja, die Angaben sind richtig.","Evet, bilgiler doğru.",""],
+["Hat sich Ihre Adresse geändert? | Sind Sie umgezogen?","Adresiniz değişti mi? / Taşındınız mı?","Nein, meine Adresse ist gleich. / Ja, ich wohne jetzt in …","Hayır, adresim aynı. / Evet, artık … oturuyorum.","s"]
+]},
+{id:"fam",de:"Herkunft, Familie & Sprachen",tr:"Memleket, aile ve diller",items:[
+["Woher kommen Sie? | Aus welchem Land kommen Sie?","Nerelisiniz?","Ich komme aus der Türkei.","Türkiye'den geliyorum.","c"],
+["Aus welcher Stadt kommen Sie?","Hangi şehirdensiniz?","Ich komme aus {gebort}.","Memleketim {gebort}.",""],
+["Wie heißt Ihre Frau?","Eşinizin adı ne?","Meine Frau heißt {frau}.","Eşimin adı {frau}.","c"],
+["Leben Sie mit Ihrer Familie zusammen? | Wohnt Ihre Frau auch in Hamburg?","Ailenizle mi yaşıyorsunuz? / Eşiniz de Hamburg'da mı?","Ja, ich wohne mit meiner Frau zusammen.","Evet, eşimle birlikte yaşıyorum.","c"],
+["Seit wann sind Sie verheiratet?","Ne zamandır evlisiniz?","Seit … [yıl].","… [yıl] yılından beri.","s"],
+["Was macht Ihre Frau beruflich?","Eşiniz ne iş yapıyor?","Meine Frau arbeitet als … / Meine Frau arbeitet im Moment nicht.","Eşim … olarak çalışıyor. / Eşim şu an çalışmıyor.","s"],
+["Haben Sie Kinder?","Çocuğunuz var mı?","{kinder}","{kinder}","c"],
+["Wo wohnt Ihre Familie? | Wo wohnen Ihre Eltern?","Aileniz nerede yaşıyor?","Meine Eltern wohnen in der Türkei.","Annemle babam Türkiye'de yaşıyor.","s"],
+["Welche Sprachen sprechen Sie?","Hangi dilleri konuşuyorsunuz?","Türkisch, Englisch und ein bisschen Deutsch.","Türkçe, İngilizce ve biraz Almanca.","c"],
+["Sprechen Sie Englisch?","İngilizce konuşuyor musunuz?","Ja, ich spreche gut Englisch.","Evet, iyi İngilizce konuşuyorum.",""],
+["Wie gut sprechen Sie Deutsch? | Wie ist Ihr Deutsch?","Almancanız ne kadar iyi?","Ich spreche ein bisschen Deutsch. Ich lerne noch.","Biraz Almanca konuşuyorum. Hâlâ öğreniyorum.","c"],
+["Wie lernen Sie Deutsch? | Machen Sie einen Deutschkurs?","Almancayı nasıl öğreniyorsunuz? / Kursa gidiyor musunuz?","Ich lerne mit einer App und mit Büchern.","Bir uygulamayla ve kitaplarla öğreniyorum.","cs"],
+["Wie oft lernen Sie Deutsch?","Ne sıklıkla Almanca çalışıyorsunuz?","Fast jeden Tag.","Neredeyse her gün.",""],
+["Warum lernen Sie Deutsch?","Neden Almanca öğreniyorsunuz?","Ich lebe hier. Ich möchte besser Deutsch sprechen.","Burada yaşıyorum. Daha iyi Almanca konuşmak istiyorum.",""],
+["Welche Sprache sprechen Sie zu Hause?","Evde hangi dili konuşuyorsunuz?","Zu Hause sprechen wir Türkisch.","Evde Türkçe konuşuyoruz.",""],
+["Sprechen Sie im Alltag Deutsch?","Günlük hayatta Almanca konuşuyor musunuz?","Ja, manchmal. Zum Beispiel beim Einkaufen oder beim Arzt.","Evet, bazen. Örneğin alışverişte ya da doktorda.","c"],
+["Haben Sie Freunde in Deutschland?","Almanya'da arkadaşlarınız var mı?","Ja, ich habe Freunde hier.","Evet, burada arkadaşlarım var.",""],
+["Was vermissen Sie aus der Türkei?","Türkiye'den neyi özlüyorsunuz?","Meine Familie und das Essen.","Ailemi ve yemekleri.",""],
+["Wie oft fahren Sie in die Türkei?","Türkiye'ye ne sıklıkla gidiyorsunuz?","Ein- oder zweimal im Jahr, im Urlaub.","Yılda bir-iki kez, tatilde.","s"]
+]},
+{id:"wohn",de:"Wohnen & Hamburg",tr:"Ev ve Hamburg",items:[
+["In welchem Stadtteil wohnen Sie?","Hangi semtte yaşıyorsunuz?","Ich wohne in {stadtteil}.","{stadtteil} semtinde yaşıyorum.","c"],
+["Wohnen Sie in einer Wohnung oder in einem Haus?","Dairede mi müstakil evde mi oturuyorsunuz?","Wir wohnen in einer Wohnung.","Bir dairede oturuyoruz.","s"],
+["Wie groß ist Ihre Wohnung?","Daireniz kaç metrekare?","Unsere Wohnung hat {qm} Quadratmeter.","Dairemiz {qm} metrekare.","c","Yeterli oturma alanı başvuru şartlarından biri, bu yüzden gelebilir."],
+["Wie viele Zimmer hat Ihre Wohnung?","Dairenizde kaç oda var?","Sie hat {zimmer} Zimmer.","{zimmer} odası var.",""],
+["Wohnen Sie allein? | Wer wohnt in Ihrer Wohnung?","Yalnız mı yaşıyorsunuz? / Evde kimler yaşıyor?","Nein, ich wohne mit meiner Frau und unserem Hund.","Hayır, eşim ve köpeğimizle yaşıyorum.","c"],
+["Wohnen Sie zur Miete?","Kirada mı oturuyorsunuz?","Nein, wir haben eine eigene Wohnung.","Hayır, kendi dairemiz var.","c"],
+["Wohnen Sie gern in Hamburg?","Hamburg'da yaşamayı seviyor musunuz?","Ja, sehr gern.","Evet, çok seviyorum.",""],
+["Was gefällt Ihnen an Hamburg?","Hamburg'da neyi seviyorsunuz?","Die Stadt ist schön und grün. Ich mag die Elbe.","Şehir güzel ve yeşil. Elbe'yi seviyorum.","c"],
+["Was gefällt Ihnen nicht?","Neyi sevmiyorsunuz?","Das Wetter. Es regnet oft.","Havayı. Sık yağmur yağıyor.",""],
+["Wie ist das Wetter heute?","Bugün hava nasıl?","Heute ist es kalt. / Heute ist es warm. / Es regnet.","Bugün hava soğuk. / Bugün hava sıcak. / Yağmur yağıyor.","s"],
+["Ist Hamburg teuer?","Hamburg pahalı mı?","Ja, Hamburg ist ziemlich teuer.","Evet, Hamburg epey pahalı.",""],
+["Wo kaufen Sie ein?","Alışverişi nereden yapıyorsunuz?","Meistens im Supermarkt.","Genellikle süpermarketten.",""],
+["Haben Sie einen Garten?","Bahçeniz var mı?","Ja, wir haben einen Garten.","Evet, bahçemiz var.",""],
+["Haben Sie Haustiere?","Evcil hayvanınız var mı?","Ja, wir haben einen Hund.","Evet, bir köpeğimiz var.","c"],
+["Wie heißt Ihr Hund?","Köpeğinizin adı ne?","Mein Hund heißt {hund}.","Köpeğimin adı {hund}.",""]
+]},
+{id:"ne",de:"Blaue Karte & Niederlassung",tr:"Blue Card ve kalıcı oturum",items:[
+["Welchen Aufenthaltstitel haben Sie?","Hangi oturum izniniz var?","Ich habe eine Blaue Karte EU.","EU Blue Card'ım var.","c"],
+["Seit wann haben Sie die Blaue Karte?","Blue Card'ınız ne zamandan beri var?","Seit November 2023.","Kasım 2023'ten beri.","c","Kartın üzerindeki geçerlilik başlangıcı teslim tarihinden farklı olabilir; kartına bir bak."],
+["Warum möchten Sie eine Niederlassungserlaubnis?","Neden kalıcı oturum istiyorsunuz?","Ich lebe und arbeite hier. Ich möchte hierbleiben.","Burada yaşıyor ve çalışıyorum. Burada kalmak istiyorum.","c"],
+["Was ist eine Niederlassungserlaubnis?","Kalıcı oturum izni nedir?","Das ist ein unbefristeter Aufenthaltstitel.","Süresiz bir oturum iznidir.",""],
+["Wie lange möchten Sie in Deutschland bleiben?","Almanya'da ne kadar kalmak istiyorsunuz?","Lange. Ich möchte hier leben.","Uzun süre. Burada yaşamak istiyorum.",""],
+["Wie viele Monate haben Sie mit der Blauen Karte gearbeitet?","Blue Card ile kaç ay çalıştınız?","Mehr als 27 Monate.","27 aydan fazla.","s","Kesin sayıyı emeklilik dökümünden (Versicherungsverlauf) kontrol et."],
+["Können Sie einfache Fragen auf Deutsch beantworten?","Basit soruları Almanca cevaplayabilir misiniz?","Ja, ich kann einfache Fragen verstehen und beantworten.","Evet, basit soruları anlayıp cevaplayabilirim.","c"],
+["Warum haben Sie keinen Sprachtest gemacht?","Neden dil sınavına girmediniz?","Ich lerne Deutsch. Ich möchte heute mein Deutsch zeigen.","Almanca öğreniyorum. Bugün Almancamı göstermek istiyorum.","c"],
+["Können Sie sich bitte kurz vorstellen? | Erzählen Sie bitte etwas über sich.","Kendinizi kısaca tanıtır mısınız?","Ich heiße {vorname}. Ich komme aus der Türkei. Ich bin {alter} Jahre alt. Ich wohne in Hamburg und arbeite im Bankensektor.","Adım {vorname}. Türkiye'den geliyorum. {alter} yaşındayım. Hamburg'da yaşıyor, bankacılıkta çalışıyorum.","c"],
+["Bis wann ist Ihre Karte gültig? | Ist Ihre Blaue Karte noch gültig?","Kartınız ne zamana kadar geçerli?","Sie ist bis {gueltig} gültig.","{gueltig} tarihine kadar geçerli.",""],
+["Haben Sie den Antrag online gestellt?","Başvuruyu online yaptınız mı?","Ja, ich habe den Antrag online gestellt.","Evet, başvuruyu online yaptım.","","Hamburg'da süreç: önce online başvuru, sonra görüşme daveti."],
+["Möchten Sie in Hamburg bleiben?","Hamburg'da kalmak istiyor musunuz?","Ja, ich möchte hier wohnen und arbeiten.","Evet, burada yaşamak ve çalışmak istiyorum.",""],
+["Bekommen Sie Sozialleistungen? | Bekommen Sie Bürgergeld?","Sosyal yardım alıyor musunuz?","Nein. Ich arbeite und verdiene mein Geld selbst.","Hayır. Çalışıyorum, paramı kendim kazanıyorum.","cs","Şartlardan biri: geçimini devlet yardımı olmadan sağlamak."],
+["Sind Sie vorbestraft? | Hatten Sie Probleme mit der Polizei?","Sabıkanız var mı? / Polisle sorun yaşadınız mı?","Nein.","Hayır.","cs","Şartlardan biri: sabıka kaydı olmaması."],
+["Waren Sie länger als sechs Monate im Ausland? | Waren Sie lange in der Türkei?","Altı aydan uzun yurt dışında kaldınız mı?","Nein. Nur im Urlaub, ein paar Wochen.","Hayır. Sadece tatilde, birkaç hafta.","s"],
+["Haben Sie ein biometrisches Foto?","Biyometrik fotoğrafınız var mı?","Ja, hier ist es. / Kann ich das Foto hier machen?","Evet, burada. / Fotoğrafı burada çekebilir miyim?","s","Welcome Center'da fotoğraf kabini var (6 €)."],
+["Die Gebühr beträgt 113 Euro. | Das kostet 113 Euro.","Harç 113 avro.","In Ordnung. Kann ich mit Karte bezahlen?","Tamam. Kartla ödeyebilir miyim?","c"],
+["Die Karte ist in zwei bis vier Wochen fertig.","Kart iki ila dört hafta içinde hazır olur.","Gut. Bekomme ich eine Nachricht?","Güzel. Bana haber gelecek mi?",""]
+]},
+{id:"arb",de:"Beruf & Arbeit",tr:"İş hayatı ve meslek",items:[
+["In welcher Branche arbeiten Sie?","Hangi sektörde çalışıyorsunuz?","Im Bankensektor.","Bankacılık sektöründe.","c"],
+["Was machen Sie bei der Arbeit? | Was sind Ihre Aufgaben?","İşte ne yapıyorsunuz?","Ich arbeite an digitalen Produkten und Projekten.","Dijital ürünler ve projeler üzerinde çalışıyorum.","c"],
+["Arbeiten Sie im Büro oder zu Hause? | Arbeiten Sie im Homeoffice?","Ofiste mi evden mi çalışıyorsunuz?","Im Büro und manchmal zu Hause.","Ofiste, bazen de evden.","s"],
+["Arbeiten Sie Vollzeit?","Tam zamanlı mı çalışıyorsunuz?","Ja, ich arbeite Vollzeit.","Evet, tam zamanlı çalışıyorum.","s"],
+["Wie viele Stunden arbeiten Sie pro Woche?","Haftada kaç saat çalışıyorsunuz?","Vierzig Stunden pro Woche.","Haftada kırk saat.","s"],
+["Wann beginnt Ihre Arbeit?","İşiniz kaçta başlıyor?","Meistens um neun Uhr.","Genellikle saat dokuzda.","s"],
+["Wann haben Sie Feierabend?","Mesainiz kaçta bitiyor?","Meistens um sechs Uhr.","Genellikle saat altıda.","s"],
+["Arbeiten Sie im Team?","Bir ekipte mi çalışıyorsunuz?","Ja, ich arbeite in einem Team.","Evet, bir ekipte çalışıyorum.",""],
+["Welche Sprache sprechen Sie bei der Arbeit?","İşte hangi dili konuşuyorsunuz?","Meistens Englisch, manchmal Deutsch.","Çoğunlukla İngilizce, bazen Almanca.","c"],
+["Haben Sie einen Arbeitsvertrag?","İş sözleşmeniz var mı?","Ja, hier ist mein Arbeitsvertrag.","Evet, işte iş sözleşmem.","c"],
+["Arbeiten Sie noch bei Ihrer Firma?","Hâlâ aynı şirkette mi çalışıyorsunuz?","Ja, ich arbeite noch dort.","Evet, hâlâ orada çalışıyorum.","cs","Durumun değiştiyse 'Durum değişirse' bölümündeki cümleleri kullan."],
+["Haben Sie den Arbeitgeber gewechselt?","İşveren değiştirdiniz mi?","Nein. / Ja, seit … arbeite ich bei …","Hayır. / Evet, …'den beri …'de çalışıyorum.","s"],
+["Wann haben Sie in Deutschland angefangen zu arbeiten?","Almanya'da ne zaman çalışmaya başladınız?","Im Februar 2023.","Şubat 2023'te.","c"],
+["Gefällt Ihnen Ihre Arbeit?","İşinizi seviyor musunuz?","Ja, meine Arbeit ist interessant.","Evet, işim ilginç.",""],
+["Was haben Sie studiert? | Haben Sie studiert?","Ne okudunuz? / Üniversite okudunuz mu?","Ich habe {fach} studiert.","{fach} okudum.","c","Blue Card yükseköğrenim şartına bağlı; bu soru gelebilir."],
+["Wo haben Sie studiert?","Nerede okudunuz?","Ich habe {uniort} studiert.","Okuduğum yer: {uniort}.",""],
+["Was haben Sie vorher gemacht? | Wo haben Sie vorher gearbeitet?","Daha önce ne iş yaptınız?","Ich habe auch früher im Bankensektor gearbeitet.","Eskiden de bankacılık sektöründe çalıştım.",""]
+]},
+{id:"wechsel",de:"Wenn sich etwas ändert",tr:"İş durumun değişirse (Türkçe → Almanca)",items:[
+["Hâlâ şirketimde çalışıyorum.","","Ich arbeite noch bei {firma}.","","p"],
+["İş sözleşmem devam ediyor.","","Mein Arbeitsvertrag läuft noch.","","p"],
+["İşveren değiştiriyorum.","","Ich wechsle meinen Arbeitgeber.","","p"],
+["… tarihinde yeni şirkette başlıyorum.","","Ich fange am … bei … an.","","p"],
+["İşte yeni iş sözleşmem.","","Hier ist mein neuer Arbeitsvertrag.","","p"],
+["Şu anda yeni bir iş arıyorum.","","Ich suche gerade eine neue Stelle.","","p"],
+["Almanya'da çalışmaya devam etmek istiyorum.","","Ich möchte weiter in Deutschland arbeiten.","","p"]
+]},
+{id:"doc",de:"Unterlagen & Versicherung",tr:"Evrak, maaş ve sigorta",items:[
+["Haben Sie Ihre Gehaltsabrechnungen dabei?","Maaş bordrolarınız yanınızda mı?","Ja, hier sind meine Gehaltsabrechnungen.","Evet, bordrolarım burada.","c"],
+["Können Sie mir die letzten drei Abrechnungen geben?","Son üç bordroyu verir misiniz?","Ja, einen Moment, bitte.","Evet, bir dakika lütfen.",""],
+["Wie viel verdienen Sie? | Wie hoch ist Ihr Gehalt?","Ne kadar kazanıyorsunuz?","Ich verdiene … Euro brutto im Jahr.","Yıllık brüt … avro kazanıyorum.","s","Sayıyı Almanca söylemeyi çalış: 60.000 = sechzigtausend."],
+["Haben Sie einen Versicherungsverlauf? | Haben Sie einen Rentenversicherungsverlauf?","Emeklilik sigortası dökümünüz var mı?","Ja, hier ist mein Versicherungsverlauf.","Evet, işte emeklilik dökümüm.","c"],
+["Zahlen Sie in die Rentenversicherung ein?","Emeklilik primi ödüyor musunuz?","Ja, über meine Arbeit.","Evet, işim üzerinden.",""],
+["Wo sind Sie krankenversichert? | Sind Sie krankenversichert?","Hangi sağlık sigortasındasınız?","Ich bin bei {kasse} versichert.","{kasse} sigortalısıyım.","c"],
+["Haben Sie einen Nachweis von der Krankenkasse?","Sigortadan belgeniz var mı?","Ja, hier ist die Bescheinigung.","Evet, işte belge.",""],
+["Haben Sie einen Mietvertrag oder einen Kaufvertrag?","Kira ya da satış sözleşmeniz var mı?","Hier ist unser Kaufvertrag.","İşte satın alma sözleşmemiz.","c","Oturma alanını (m²) gösteren belge isteniyor."],
+["Haben Sie das Original dabei?","Aslı yanınızda mı?","Ja, das Original ist hier.","Evet, aslı burada.",""],
+["Haben Sie auch eine Kopie?","Fotokopisi var mı?","Ja, hier ist eine Kopie. / Nein, leider nicht.","Evet, işte fotokopi. / Maalesef yok.","s"],
+["Es fehlt noch ein Dokument. | Fehlt noch etwas?","Bir belge eksik.","Welche Unterlage fehlt, bitte?","Hangi belge eksik, lütfen?","c"],
+["Können Sie das Dokument nachreichen?","Belgeyi sonradan getirebilir misiniz?","Ja. Bis wann?","Evet. Ne zamana kadar?","c"],
+["Laden Sie das bitte online hoch. | Können Sie das per E-Mail schicken?","Lütfen online yükleyin. / E-postayla gönderebilir misiniz?","Ja, das mache ich heute noch.","Evet, bugün hallederim.",""],
+["Ist Ihre Adresse aktuell?","Adresiniz güncel mi?","Ja, meine Adresse ist aktuell.","Evet, adresim güncel.",""],
+["Wie möchten Sie bezahlen? | Bar oder mit Karte?","Nasıl ödemek istersiniz?","Mit Karte, bitte.","Kartla, lütfen.",""],
+["Brauchen Sie eine Quittung?","Makbuz ister misiniz?","Ja, bitte.","Evet, lütfen.",""]
+]},
+{id:"alltag",de:"Alltag",tr:"Günlük rutin",items:[
+["Wann stehen Sie auf?","Ne zaman kalkarsınız?","Meistens um acht Uhr.","Genellikle saat sekizde.","s"],
+["Was machen Sie morgens?","Sabahları ne yaparsınız?","Ich frühstücke und gehe mit meinem Hund spazieren.","Kahvaltı yapar, köpeğimi yürüyüşe çıkarırım.","c"],
+["Was essen Sie zum Frühstück?","Kahvaltıda ne yersiniz?","Brot, Käse und Eier. Ich trinke Tee.","Ekmek, peynir ve yumurta. Çay içerim.",""],
+["Trinken Sie Kaffee oder Tee?","Kahve mi çay mı?","Ich trinke gern Tee und Kaffee.","Çay ve kahve içmeyi severim.",""],
+["Wann essen Sie zu Mittag?","Öğle yemeğini ne zaman yersiniz?","Meistens um ein Uhr.","Genellikle saat birde.",""],
+["Kochen Sie zu Hause?","Evde yemek yapar mısınız?","Ja, wir kochen oft zu Hause.","Evet, sık sık evde yemek yaparız.",""],
+["Was essen Sie gern? | Was ist Ihr Lieblingsessen?","Ne yemeyi seversiniz?","Ich esse gern türkisches Essen, zum Beispiel Köfte.","Türk yemeklerini severim, örneğin köfte.","c"],
+["Wann gehen Sie einkaufen?","Ne zaman alışverişe gidersiniz?","Meistens am Samstag.","Genellikle cumartesi.",""],
+["Was machen Sie nach der Arbeit?","İşten sonra ne yaparsınız?","Ich gehe mit dem Hund spazieren oder ich koche.","Köpekle yürüyüşe çıkarım ya da yemek yaparım.","c"],
+["Sehen Sie gern fern?","Televizyon izlemeyi sever misiniz?","Ja, manchmal sehe ich Serien.","Evet, bazen dizi izlerim.",""],
+["Wann gehen Sie schlafen?","Ne zaman yatarsınız?","Meistens um elf Uhr.","Genellikle saat on birde.",""],
+["Wie kommen Sie zur Arbeit?","İşe nasıl gidiyorsunuz?","Mit der Bahn. / Mit dem Auto.","Trenle. / Arabayla.","cs"],
+["Wie lange brauchen Sie zur Arbeit? | Wie lange dauert Ihr Arbeitsweg?","İşe gitmek ne kadar sürüyor?","Ungefähr {arbeitsweg} Minuten.","Yaklaşık {arbeitsweg} dakika.",""],
+["Fahren Sie jeden Tag ins Büro?","Her gün ofise gider misiniz?","Nein, manchmal arbeite ich zu Hause.","Hayır, bazen evden çalışırım.","s"]
+]},
+{id:"zeit",de:"Uhrzeit, Datum & Zahlen",tr:"Saatler, tarihler, sayılar",items:[
+["Welcher Tag ist heute? | Welcher Wochentag ist heute?","Bugün günlerden ne?","Heute ist {wochentag}.","Bugün {wochentag}.","c"],
+["Welches Datum haben wir heute? | Der Wievielte ist heute?","Bugün ayın kaçı?","Heute ist der {datum}.","Bugün {datum}.","c","Tarih sıra sayısıyla söylenir: der zwanzigste Oktober."],
+["Welcher Monat ist jetzt?","Hangi aydayız?","Jetzt ist {monat}.","Şu an {monat}.",""],
+["Welches Jahr haben wir?","Hangi yıldayız?","Wir haben {jahr}.","{jahr} yılındayız.",""],
+["Wie spät ist es? | Wie viel Uhr ist es?","Saat kaç?","Es ist {uhr}.","Saat {uhr}.","c"],
+["Wann haben Sie Geburtstag?","Doğum gününüz ne zaman?","Am {geburtstag}.","{geburtstag}.",""],
+["Was haben Sie gestern gemacht?","Dün ne yaptınız?","Gestern habe ich gearbeitet.","Dün çalıştım.","c"],
+["Was haben Sie am Wochenende gemacht?","Hafta sonu ne yaptınız?","Ich bin mit meiner Frau spazieren gegangen.","Eşimle yürüyüşe çıktım.","s"],
+["Was machen Sie morgen?","Yarın ne yapacaksınız?","Morgen arbeite ich.","Yarın çalışacağım.",""],
+["Was machen Sie heute nach dem Termin?","Randevudan sonra ne yapacaksınız?","Ich fahre nach Hause und arbeite.","Eve gidip çalışacağım.","c"],
+["Wie lange wohnen Sie schon hier?","Ne zamandır burada yaşıyorsunuz?","Seit 2023.","2023'ten beri.",""],
+["Wie ist Ihre Postleitzahl?","Posta kodunuz ne?","Meine Postleitzahl ist {plz}.","Posta kodum {plz}.",""],
+["Sayı: 27","","siebenundzwanzig","","p"],
+["Sayı: 113 (harç)","","hundertdreizehn","","p"],
+["Yıl: 1987","","neunzehnhundertsiebenundachtzig","","p"],
+["Yıl: 2023","","zweitausenddreiundzwanzig","","p"],
+["Saat 9:30","","halb zehn","","p"],
+["6 Kasım'da","","am sechsten November","","p"],
+["5 Mart'ta","","am fünften März","","p"]
+]},
+{id:"verkehr",de:"Verkehr",tr:"Ulaşım ve şehir",items:[
+["Sind Sie mit dem Bus gekommen?","Otobüsle mi geldiniz?","{anreisek}.","{anreise}.","s"],
+["Haben Sie ein Deutschlandticket?","Deutschlandticket'iniz var mı?","Ja, ich habe ein Deutschlandticket. / Nein.","Evet, var. / Hayır.","s"],
+["Wie kommen Sie in die Innenstadt?","Şehir merkezine nasıl gidersiniz?","Mit der U-Bahn oder mit der S-Bahn.","U-Bahn ya da S-Bahn ile.",""],
+["Wo kann man ein Ticket kaufen?","Bilet nereden alınır?","Am Automaten oder in der App.","Makineden ya da uygulamadan.",""],
+["Wie weit ist es von Ihrer Wohnung bis hierher?","Evinizden buraya ne kadar uzak?","Ungefähr dreißig Minuten.","Yaklaşık otuz dakika.","s"],
+["Fahren Sie Auto?","Araba kullanıyor musunuz?","Ja, ich fahre Auto. / Nein.","Evet. / Hayır.","s"],
+["Haben Sie einen Führerschein?","Ehliyetiniz var mı?","Ja, einen türkischen. Ich mache gerade den deutschen Führerschein.","Evet, Türk ehliyetim var. Şu an Alman ehliyetine çeviriyorum.","s"],
+["Wie fahren Sie nach Hause?","Eve nasıl döneceksiniz?","{anreisek}.","{anreise}.",""],
+["Kennen Sie den Weg?","Yolu biliyor musunuz?","Ja, ich kenne den Weg.","Evet, yolu biliyorum.",""]
+]},
+{id:"essen",de:"Einkaufen & Essen",tr:"Alışveriş ve yemek",items:[
+["Wo kaufen Sie Brot?","Ekmeği nereden alırsınız?","In der Bäckerei.","Fırından.",""],
+["Was kaufen Sie im Supermarkt?","Marketten ne alırsınız?","Obst, Gemüse, Brot und Milch.","Meyve, sebze, ekmek ve süt.",""],
+["Wie viel kostet das?","Bu ne kadar?","Das kostet fünf Euro.","Beş avro.",""],
+["Zahlen Sie bar oder mit Karte?","Nakit mi kartla mı?","Meistens mit Karte.","Genellikle kartla.",""],
+["Mögen Sie deutsches Essen?","Alman yemeklerini sever misiniz?","Ja, manche Gerichte mag ich.","Evet, bazılarını severim.",""],
+["Was trinken Sie gern?","Ne içmeyi seversiniz?","Wasser und Tee.","Su ve çay.",""],
+["Gehen Sie gern ins Restaurant?","Restorana gitmeyi sever misiniz?","Ja, manchmal am Wochenende.","Evet, bazen hafta sonları.",""],
+["Was bestellen Sie im Restaurant?","Restoranda ne sipariş edersiniz?","Oft Fisch oder Fleisch mit Gemüse.","Genellikle sebzeli balık ya da et.",""],
+["Brauchen Sie eine Tüte?","Poşet ister misiniz?","Nein, danke. Ich habe eine Tasche.","Hayır, teşekkürler. Çantam var.",""],
+["Wo ist die nächste Apotheke?","En yakın eczane nerede?","Gleich um die Ecke.","Hemen köşede.",""]
+]},
+{id:"ges",de:"Gesundheit & Termine",tr:"Sağlık, randevu ve telefon",items:[
+["Haben Sie Ihre Gesundheitskarte dabei? | Haben Sie eine Krankenversicherungskarte?","Sağlık kartınız yanınızda mı?","Ja, hier ist meine Karte.","Evet, işte kartım.",""],
+["Haben Sie einen Hausarzt?","Aile doktorunuz var mı?","Ja, ich habe einen Hausarzt. / Nein, noch nicht.","Evet. / Henüz yok.","s"],
+["Was machen Sie, wenn Sie krank sind?","Hasta olunca ne yaparsınız?","Ich gehe zum Arzt und rufe bei der Arbeit an.","Doktora gider, işyerini ararım.",""],
+["Wie machen Sie einen Termin beim Arzt?","Doktordan nasıl randevu alırsınız?","Ich rufe an oder buche online.","Ararım ya da online alırım.",""],
+["Können Sie nächste Woche wiederkommen? | Können Sie morgen wiederkommen?","Gelecek hafta / yarın tekrar gelebilir misiniz?","Ja. An welchem Tag und um wie viel Uhr?","Evet. Hangi gün ve saat kaçta?","c"],
+["Wann haben Sie Zeit?","Ne zaman müsaitsiniz?","Am Montagvormittag habe ich Zeit.","Pazartesi sabahı müsaitim.",""],
+["Kann ich Sie telefonisch erreichen?","Size telefonla ulaşabilir miyim?","Ja, unter dieser Nummer.","Evet, bu numaradan.",""],
+["Haben Sie unsere E-Mail bekommen?","E-postamızı aldınız mı?","Ja, ich habe die E-Mail bekommen.","Evet, e-postayı aldım.",""],
+["Brauchen Sie Hilfe?","Yardıma ihtiyacınız var mı?","Danke, im Moment nicht.","Teşekkürler, şu an yok.",""]
+]},
+{id:"frei",de:"Freizeit",tr:"Hobiler ve hafta sonu",items:[
+["Was machen Sie in Ihrer Freizeit?","Boş zamanınızda ne yaparsınız?","Ich gehe spazieren, höre Musik und programmiere kleine Apps.","Yürüyüş yapar, müzik dinler, küçük uygulamalar yazarım.","c"],
+["Was sind Ihre Hobbys?","Hobileriniz neler?","Reisen, Spiele und Musik.","Seyahat, oyunlar ve müzik.","c"],
+["Machen Sie Sport?","Spor yapıyor musunuz?","Ich gehe viel spazieren, mit meinem Hund.","Köpeğimle çok yürüyüş yapıyorum.",""],
+["Spielen Sie Tennis?","Tenis oynuyor musunuz?","Ja, manchmal. / Nein, aber ich möchte es lernen.","Evet, bazen. / Hayır ama öğrenmek istiyorum.","s"],
+["Hören Sie gern Musik?","Müzik dinlemeyi sever misiniz?","Ja, sehr gern. Türkische Popmusik.","Evet, çok. Türkçe pop.",""],
+["Lesen Sie gern?","Okumayı sever misiniz?","Ja, manchmal.","Evet, bazen.",""],
+["Reisen Sie gern? | Wohin reisen Sie gern?","Seyahat etmeyi sever misiniz?","Ja, ich fahre gern ans Meer.","Evet, deniz kenarına gitmeyi severim.",""],
+["Was machen Sie am Sonntag?","Pazar günleri ne yaparsınız?","Ich ruhe mich aus und gehe spazieren.","Dinlenir, yürüyüşe çıkarım.",""],
+["Treffen Sie oft Freunde?","Sık arkadaşlarla buluşur musunuz?","Ja, am Wochenende.","Evet, hafta sonları.",""],
+["Gehen Sie gern an die Elbe?","Elbe kıyısına gitmeyi sever misiniz?","Ja, dort gehe ich gern spazieren.","Evet, orada yürümeyi severim.",""]
+]},
+{id:"leben",de:"Leben in Deutschland",tr:"Günlük düzen (LiD sınavı değil)",items:[
+["Wie bezahlen Sie Ihre Rechnungen?","Faturalarınızı nasıl ödersiniz?","Per Überweisung oder Lastschrift.","Havaleyle ya da otomatik ödemeyle.",""],
+["Wo melden Sie Ihre Adresse an?","Adresinizi nerede kaydettirirsiniz?","Beim Bürgeramt.","Bürgeramt'ta.","c"],
+["Was machen Sie bei einem Umzug?","Taşınınca ne yaparsınız?","Ich melde meine neue Adresse beim Bürgeramt an.","Yeni adresimi Bürgeramt'ta kaydettiririm.",""],
+["Wie trennen Sie den Müll?","Çöpü nasıl ayırırsınız?","Papier, Plastik, Glas, Bio und Restmüll.","Kâğıt, plastik, cam, organik ve diğer çöp.",""],
+["Was machen Sie bei einem Notfall?","Acil durumda ne yaparsınız?","Ich rufe den Notruf an: eins, eins, zwei.","Acil hattı ararım: 112.","c","'Ich rufe Hilfe' Almanca'da doğal değil; böyle söyle."],
+["Welche Nummer hat die Polizei?","Polisin numarası ne?","Eins, eins, null.","110.",""],
+["Welche Nummer wählen Sie bei Feuer?","Yangında hangi numarayı ararsınız?","Eins, eins, zwei.","112.",""],
+["Wo kaufen Sie Medikamente?","İlacı nereden alırsınız?","In der Apotheke.","Eczaneden.",""],
+["Was machen Sie, wenn Sie einen Brief nicht verstehen?","Bir mektubu anlamazsanız ne yaparsınız?","Ich frage Freunde oder ich benutze eine App.","Arkadaşlara sorarım ya da bir uygulama kullanırım.",""],
+["Ist Hamburg eine Stadt oder ein Bundesland?","Hamburg şehir mi eyalet mi?","Beides. Hamburg ist eine Stadt und ein Bundesland.","İkisi de. Hamburg hem şehir hem eyalet.",""],
+["Wie heißt der Fluss in Hamburg?","Hamburg'daki nehrin adı ne?","Die Elbe.","Elbe.",""],
+["Was ist die Hauptstadt von Deutschland?","Almanya'nın başkenti neresi?","Berlin.","Berlin.",""]
+]},
+{id:"rueck",de:"Rückfragen",tr:"Anlamadığında kurtaran cümleler (Türkçe → Almanca)",items:[
+["Bunu tekrar eder misiniz?","","Können Sie das bitte wiederholen?","","p"],
+["Daha yavaş konuşabilir misiniz?","","Können Sie bitte langsamer sprechen?","","p"],
+["Efendim? (Duyamadım)","","Wie bitte?","","p"],
+["Bu kelime ne demek?","","Was bedeutet dieses Wort?","","p"],
+["Bunu daha basit söyler misiniz?","","Können Sie das bitte einfacher sagen?","","p"],
+["Affedersiniz, soruyu anlamadım.","","Entschuldigung, ich habe die Frage nicht verstanden.","","p"],
+["İşimi mi evimi mi kastediyorsunuz?","","Meinen Sie meine Arbeit oder meine Wohnung?","","p"],
+["Bir örnek verebilir misiniz?","","Können Sie mir ein Beispiel geben?","","p"],
+["Bir saniye, biraz düşünmem lazım.","","Einen Moment, bitte. Ich muss kurz nachdenken.","","p"],
+["Bunu yazabilir misiniz?","","Können Sie das bitte aufschreiben?","","p"],
+["Emin değilim.","","Ich bin nicht sicher.","","p"],
+["Bunu tam bilmiyorum.","","Das weiß ich nicht genau.","","p"],
+["Belgelerime kısaca bakabilir miyim?","","Darf ich kurz in meine Unterlagen schauen?","","p"],
+["Hâlâ Almanca öğreniyorum, biraz yavaş konuşur musunuz?","","Ich lerne noch Deutsch. Bitte sprechen Sie etwas langsamer.","","p"],
+["Belgeyi ne zamana kadar getirmem gerekiyor?","","Bis wann muss ich das Dokument nachreichen?","","p"],
+["Kart ne zaman hazır olur?","","Wann ist die Karte fertig?","","p"],
+["Yardımınız için çok teşekkürler.","","Vielen Dank für Ihre Hilfe.","","p"]
+]},
+{id:"amt",de:"Anweisungen im Amt",tr:"Memurdan gelebilecek kısa talimatlar",items:[
+["Bitte nehmen Sie Platz.","Lütfen oturun.","Danke.","Teşekkürler.",""],
+["Bitte warten Sie einen Moment.","Lütfen biraz bekleyin.","Ja, gern.","Tabii.",""],
+["Zeigen Sie mir bitte Ihren Reisepass.","Pasaportunuzu gösterin lütfen.","Hier, bitte.","Buyurun.",""],
+["Legen Sie die Unterlagen bitte auf den Tisch.","Belgeleri masaya koyun lütfen.","Ja, natürlich.","Tabii.",""],
+["Füllen Sie bitte dieses Formular aus.","Lütfen bu formu doldurun.","Ja. Wo soll ich anfangen?","Peki. Nereden başlayayım?",""],
+["Schreiben Sie bitte Ihre Adresse hierhin.","Adresinizi buraya yazın lütfen.","Ja, gern.","Tabii.",""],
+["Bitte prüfen Sie Ihre Daten.","Lütfen bilgilerinizi kontrol edin.","Einen Moment. Alles ist richtig.","Bir dakika. Hepsi doğru.",""],
+["Unterschreiben Sie bitte hier.","Burayı imzalayın lütfen.","Hier? Ja, gern.","Burayı mı? Tabii.","c"],
+["Schauen Sie bitte in die Kamera.","Kameraya bakın lütfen.","Ja.","Peki.",""],
+["Legen Sie bitte Ihren Finger auf das Gerät. | Bitte den linken Zeigefinger.","Parmağınızı cihaza koyun. / Sol işaret parmağınız.","So? In Ordnung.","Böyle mi? Tamam.","c"],
+["Bitte warten Sie draußen.","Lütfen dışarıda bekleyin.","In Ordnung.","Tamam.",""],
+["Reichen Sie das Dokument bitte nach. | Bringen Sie das Dokument bitte nach.","Belgeyi sonradan getirin/yükleyin lütfen.","Ja. Bis wann?","Evet. Ne zamana kadar?","c"],
+["Kommen Sie bitte nächste Woche wieder.","Gelecek hafta tekrar gelin lütfen.","An welchem Tag?","Hangi gün?",""],
+["Sie bekommen eine Nachricht. | Sie bekommen einen Brief.","Size haber/mektup gelecek.","Danke. Wann ungefähr?","Teşekkürler. Yaklaşık ne zaman?","c"]
+]}
+];
+
+/* ---------- Senaryolar: m = memur, s = sen ---------- */
+var SCENES=[
+{t:"Giriş ve başvuru",l:[["m","Guten Tag. Was kann ich für Sie tun?","İyi günler. Size nasıl yardımcı olabilirim?"],["s","Guten Tag. Ich möchte eine Niederlassungserlaubnis beantragen.","İyi günler. Kalıcı oturum iznine başvurmak istiyorum."],["m","Haben Sie einen Termin?","Randevunuz var mı?"],["s","Ja, um {termin} Uhr.","Evet, saat {termin}."],["m","Zeigen Sie mir bitte Ihren Pass.","Pasaportunuzu gösterin lütfen."],["s","Ja, hier ist mein Pass.","Evet, işte pasaportum."]]},
+{t:"Kendini tanıtma",l:[["m","Stellen Sie sich bitte kurz vor.","Kendinizi kısaca tanıtın lütfen."],["s","Ich heiße {vorname}. Ich komme aus der Türkei. Ich bin {alter} Jahre alt. Ich wohne in Hamburg und arbeite im Bankensektor.","Adım {vorname}. Türkiye'den geliyorum. {alter} yaşındayım. Hamburg'da yaşıyor, bankacılıkta çalışıyorum."],["m","Seit wann sind Sie in Deutschland?","Ne zamandan beri Almanya'dasınız?"],["s","Seit Februar 2023.","Şubat 2023'ten beri."]]},
+{t:"Blue Card ve süre",l:[["m","Haben Sie eine Blaue Karte EU?","Blue Card'ınız var mı?"],["s","Ja, hier ist meine Blaue Karte.","Evet, işte Blue Card'ım."],["m","Wann haben Sie die Karte bekommen?","Kartı ne zaman aldınız?"],["s","Am 6. November 2023.","6 Kasım 2023'te."],["m","Und seit wann arbeiten Sie hier?","Peki ne zamandan beri burada çalışıyorsunuz?"],["s","Seit Februar 2023.","Şubat 2023'ten beri."]]},
+{t:"Almancanı yoklama",l:[["m","Haben Sie ein A1-Zertifikat?","A1 sertifikanız var mı?"],["s","Noch nicht. Aber ich lerne Deutsch.","Henüz yok. Ama Almanca öğreniyorum."],["m","Sprechen Sie im Alltag Deutsch?","Günlük hayatta Almanca konuşuyor musunuz?"],["s","Ja, manchmal. Zum Beispiel beim Einkaufen.","Evet, bazen. Örneğin alışverişte."],["m","Was machen Sie am Wochenende?","Hafta sonu ne yaparsınız?"],["s","Ich gehe mit meinem Hund spazieren und treffe Freunde.","Köpeğimle yürür, arkadaşlarla buluşurum."]]},
+{t:"Form soruları",l:[["m","Wie groß sind Sie?","Boyunuz kaç?"],["s","Ich bin {groesse} groß.","Boyum {groesse}."],["m","Und welche Augenfarbe haben Sie?","Göz renginiz?"],["s","Ich habe {augen} Augen.","Gözlerim {augen}."],["m","Sind Sie verheiratet?","Evli misiniz?"],["s","Ja, ich bin verheiratet.","Evet, evliyim."],["m","Haben Sie Kinder?","Çocuğunuz var mı?"],["s","{kinder}","{kinder}"]]},
+{t:"İş",l:[["m","Was sind Sie von Beruf?","Mesleğiniz ne?"],["s","Ich arbeite im Bankensektor, mit digitalen Produkten.","Bankacılıkta, dijital ürünlerle çalışıyorum."],["m","Wo arbeiten Sie jetzt?","Şimdi nerede çalışıyorsunuz?"],["s","Zurzeit arbeite ich bei {firma}.","Şu anda {firma} şirketinde çalışıyorum."],["m","Welche Sprache sprechen Sie bei der Arbeit?","İşte hangi dili konuşuyorsunuz?"],["s","Meistens Englisch.","Çoğunlukla İngilizce."]]},
+{t:"Eksik belge",l:[["m","Haben Sie Ihren Versicherungsverlauf dabei?","Emeklilik dökümünüz yanınızda mı?"],["s","Entschuldigung, den habe ich heute nicht dabei.","Affedersiniz, bugün yanımda değil."],["m","Dann reichen Sie ihn bitte online nach.","O zaman lütfen online olarak sonradan yükleyin."],["s","Ja, gern. Bis wann?","Tabii. Ne zamana kadar?"],["m","Bitte innerhalb von zwei Wochen.","Lütfen iki hafta içinde."],["s","In Ordnung. Vielen Dank.","Tamam. Çok teşekkürler."]]},
+{t:"Hızlı konuşmayı durdurma",l:[["m","Haben Sie die aktuelle Versicherungsbescheinigung Ihrer Krankenkasse dabei?","Sağlık sigortanızın güncel belgesi yanınızda mı?"],["s","Entschuldigung. Können Sie bitte langsamer sprechen?","Affedersiniz. Daha yavaş konuşabilir misiniz?"],["m","Haben Sie ein Papier von der Krankenkasse?","Sağlık sigortasından bir kâğıdınız var mı?"],["s","Ah, ja. Hier ist die Bescheinigung.","Ha, evet. İşte belge."]]},
+{t:"Adres ve ev",l:[["m","Wo wohnen Sie?","Nerede yaşıyorsunuz?"],["s","Ich wohne in Hamburg, in {stadtteil}.","Hamburg'da, {stadtteil} semtinde."],["m","Wie groß ist Ihre Wohnung?","Daireniz kaç metrekare?"],["s","Ungefähr {qm} Quadratmeter.","Yaklaşık {qm} metrekare."],["m","Wohnen Sie allein?","Yalnız mı yaşıyorsunuz?"],["s","Nein, ich wohne mit meiner Frau zusammen.","Hayır, eşimle birlikte yaşıyorum."]]},
+{t:"Kısa sohbet",l:[["m","Wie sind Sie heute hierhergekommen?","Bugün buraya nasıl geldiniz?"],["s","Ich bin {anreise} gekommen.","{anreise} geldim."],["m","Was machen Sie heute nach dem Termin?","Randevudan sonra ne yapacaksınız?"],["s","Ich fahre nach Hause und arbeite.","Eve gidip çalışacağım."],["m","Was machen Sie gern in Hamburg?","Hamburg'da ne yapmayı seversiniz?"],["s","Ich gehe gern an der Elbe spazieren.","Elbe kıyısında yürümeyi severim."]]},
+{t:"Parmak izi ve imza",l:[["m","Wir nehmen jetzt Ihre Fingerabdrücke.","Şimdi parmak izlerinizi alıyoruz."],["s","In Ordnung.","Tamam."],["m","Bitte den linken Zeigefinger auf das Gerät.","Sol işaret parmağınızı cihaza koyun lütfen."],["s","So?","Böyle mi?"],["m","Ja, genau. Und jetzt unterschreiben Sie bitte hier.","Evet, tam öyle. Şimdi burayı imzalayın lütfen."],["s","Hier? Ja, gern.","Burayı mı? Tabii."]]},
+{t:"Görüşme sonu",l:[["m","Ihre Unterlagen sind vollständig. Die Gebühr beträgt 113 Euro.","Belgeleriniz tam. Harç 113 avro."],["s","Kann ich mit Karte bezahlen?","Kartla ödeyebilir miyim?"],["m","Ja. Ihre Karte ist in zwei bis vier Wochen fertig. Sie bekommen eine Nachricht.","Evet. Kartınız iki ila dört haftada hazır olur. Size haber gelecek."],["s","Vielen Dank. Auf Wiedersehen.","Çok teşekkürler. Hoşça kalın."]]}
+];
+
+/* ---------- Durum ve kayıt ---------- */
+var KEY="terminprobe.v1";
+function defFields(){var o={};FIELDS.forEach(function(f){o[f.k]=f.def||"";});return o;}
+function defaults(){return {f:defFields(),p:{},rate:0.9,pause:4,readTr:true,hideQ:false,deV:"",trV:"",ivN:10,ivPool:"core",scHide:true};}
+function load(){try{var r=JSON.parse(localStorage.getItem(KEY)||"{}");var d=defaults();for(var k in r){if(k!=="f")d[k]=r[k];}d.f=Object.assign(defFields(),r.f||{});return d;}catch(e){return defaults();}}
+var S=load();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+var st={tab:"study",sec:null,idx:0,rev:false,auto:false,iv:{ph:"setup"},sc:null,scCur:-1,scRev:{},scWait:null,resetAsk:false};
+
+/* ---------- Almanca sayı/tarih yardımcıları ---------- */
+var MON=["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+var MON_TR=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+var WD=["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
+var WD_TR=["pazar","pazartesi","salı","çarşamba","perşembe","cuma","cumartesi"];
+var ONES=["null","eins","zwei","drei","vier","fünf","sechs","sieben","acht","neun","zehn","elf","zwölf","dreizehn","vierzehn","fünfzehn","sechzehn","siebzehn","achtzehn","neunzehn"];
+var TENS=["","","zwanzig","dreißig","vierzig","fünfzig","sechzig","siebzig","achtzig","neunzig"];
+function n2w(n){if(n<20)return ONES[n];var t=Math.floor(n/10),u=n%10;return (u?(u===1?"ein":ONES[u])+"und":"")+TENS[t];}
+function ordw(n){var irr={1:"erste",3:"dritte",7:"siebte",8:"achte"};if(irr[n])return irr[n];return n<20?n2w(n)+"te":n2w(n)+"ste";}
+function pd(s){var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||"");return m?{y:+m[1],m:+m[2],d:+m[3]}:null;}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+
+var LET={A:["A","Ah"],B:["Be","Beh"],C:["Ce","Zeh"],D:["De","Deh"],E:["E","Eh"],F:["Eff","Eff"],G:["Ge","Geh"],H:["Ha","Hah"],I:["I","Ih"],J:["Jott","Jott"],K:["Ka","Kah"],L:["Ell","Ell"],M:["Emm","Emm"],N:["Enn","Enn"],O:["O","Oh"],P:["Pe","Peh"],Q:["Ku","Kuh"],R:["Err","Err"],S:["Ess","Ess"],T:["Te","Teh"],U:["U","Uh"],V:["Vau","Fau"],W:["We","Weh"],X:["Ix","Iks"],Y:["Ypsilon","Üpsilon"],Z:["Zett","Zett"],"Ä":["A-Umlaut","A Umlaut"],"Ö":["O-Umlaut","O Umlaut"],"Ü":["U-Umlaut","U Umlaut"],"ß":["Eszett","Ess Zett"],"Ç":["C mit Häkchen","Zeh mit Häkchen"],"Ş":["S mit Häkchen","Ess mit Häkchen"],"Ğ":["G mit Bogen","Geh mit Bogen"],"-":["Bindestrich","Bindestrich"]};
+function spellWord(w){var out=[];for(var i=0;i<w.length;i++){var c=w[i];if(c===" ")continue;var up,key;if(c==="ı"){out.push({c:"I",n:"I ohne Punkt",s:"Ih ohne Punkt"});continue;}if(c==="i"||c==="İ"){key="I";up="I";}else{up=c.toUpperCase();key=up;}var L=LET[key]||[up,up];out.push({c:up==="I"&&c==="İ"?"İ":up,n:L[0],s:L[1]});}return out;}
+
+/* ---------- Token çözümleyici ---------- */
+function tokens(){
+  var f=S.f,T={},now=new Date();
+  function put(k,d,s,tr){T[k]={d:d,s:s==null?String(d).replace(/<[^>]+>/g,""):s,tr:tr==null?d:tr};}
+  FIELDS.forEach(function(def){var v=(f[def.k]||"").trim();if(!v)return;
+    if(def.opts){var o=def.opts.filter(function(x){return x[0]===v;})[0];if(o)put(def.k,esc(v),v,esc(o[1]));}
+    else put(def.k,esc(v),v);});
+  var g=pd(f.gebdatum);
+  if(g){var a=now.getFullYear()-g.y-((now.getMonth()+1<g.m||(now.getMonth()+1===g.m&&now.getDate()<g.d))?1:0);
+    put("alter",a+'<span class="w">'+n2w(a)+"</span>",String(a),String(a));
+    put("gebdatum",g.d+". "+MON[g.m-1]+" "+g.y,null,g.d+" "+MON_TR[g.m-1]+" "+g.y);
+    put("geburtstag",g.d+". "+MON[g.m-1],null,g.d+" "+MON_TR[g.m-1]);}
+  var mo=(now.getFullYear()-2023)*12+(now.getMonth()+1-2);
+  put("monate",mo+'<span class="w">'+(mo<100?n2w(mo):"")+"</span>",String(mo),String(mo));
+  put("wochentag",WD[now.getDay()],null,WD_TR[now.getDay()]);
+  var dd=now.getDate();
+  put("datum",dd+'. <span class="w">'+ordw(dd)+"</span> "+MON[now.getMonth()],ordw(dd)+" "+MON[now.getMonth()],dd+" "+MON_TR[now.getMonth()]);
+  put("monat",MON[now.getMonth()],null,MON_TR[now.getMonth()]);
+  put("jahr",String(now.getFullYear()));
+  var hh=now.getHours(),mm=now.getMinutes(),hm=hh+":"+(mm<10?"0":"")+mm;
+  put("uhr",hm+" Uhr",hh+" Uhr "+(mm?mm:""),hm);
+  var cm=parseInt(f.groesse,10);
+  if(cm>100&&cm<230){var m2=(cm/100).toFixed(2).replace(".",",");put("groesse",m2+" m",cm<200?"einen Meter "+n2w(cm-100):"zwei Meter "+n2w(cm-200),m2+" m");}
+  if(T.anreise){var ar=f.anreise;put("anreisek",esc(ar.charAt(0).toUpperCase()+ar.slice(1)),ar.charAt(0).toUpperCase()+ar.slice(1),T.anreise.tr);}
+  var kg=pd(f.kartegueltig);
+  if(kg)put("gueltig",kg.d+". "+MON[kg.m-1]+" "+kg.y,null,kg.d+" "+MON_TR[kg.m-1]+" "+kg.y);
+  if(T.termin)T.termin.tr=T.termin.d;
+  var names=[f.vorname,f.nachname].map(function(x){return (x||"").trim();}).filter(Boolean);
+  if(names.length){var dh=[],ss=[],tt=[];
+    names.forEach(function(nm){var sp=spellWord(nm);
+      dh.push('<span class="spell">'+esc(sp.map(function(x){return x.c;}).join("·"))+"</span>"+esc(sp.map(function(x){return x.n;}).join(", ")));
+      ss.push(sp.map(function(x){return x.s;}).join(", "));tt.push(sp.map(function(x){return x.c;}).join("-"));});
+    put("spell",dh.join("<br>"),ss.join(". "),esc(tt.join(" – ")));put("spelltr",esc(tt.join(" – ")));}
+  return T;
+}
+var MISS={alter:"yaş",monate:"ay",groesse:"boy",gueltig:"bitiş tarihi",anreisek:"ulaşım",spell:"ad",spelltr:"ad",gebdatum:"doğum tarihi",geburtstag:"doğum günü"};
+function fieldOf(k){return FIELDS.filter(function(x){return x.k===k;})[0];}
+/* mode: d = Almanca ekran, t = Türkçe ekran, s = konuşma */
+function fill(str,mode,T){
+  T=T||tokens();
+  return String(str).split(/(\{\w+\})/).map(function(part){
+    var m=/^\{(\w+)\}$/.exec(part);
+    if(!m)return mode==="s"?part:esc(part);
+    var k=m[1],t=T[k];
+    if(t){if(mode==="s")return t.s;return '<span class="tk">'+(mode==="t"?t.tr:t.d)+"</span>";}
+    var fd=fieldOf(k);
+    if(mode==="s")return fd&&fd.sp?fd.sp:"";
+    return '<span class="tk miss">['+esc(fd?fd.l:(MISS[k]||k))+"]</span>";
+  }).join("");
+}
+function speechText(str,T){var s=fill(str,"s",T).split(" / ")[0];return s.replace(/\[[^\]]*\]/g,"").replace(/\([^)]*\)/g,"").replace(/…/g,"").replace(/\s+/g," ").trim();}
+function showAlt(html){return html.split(" / ").join('<span class="or">ya da</span>');}
+function qv(it){return it[0].split("|").map(function(x){return x.trim();});}
+function isP(it){return (it[4]||"").indexOf("p")>-1;}
+function key(si,i){return SECS[si].id+":"+i;}
+
+/* ---------- Ses (Web Speech API) ---------- */
+var TTS={de:null,tr:null,list:[]};
+var curRun=0,unlocked=false;
+function pickVoices(){
+  if(!("speechSynthesis" in window))return;
+  var v=speechSynthesis.getVoices()||[];TTS.list=v;
+  function best(re,saved,prefer){var c=v.filter(function(x){return re.test(x.lang);});if(!c.length)return null;c.sort(function(a,b){return (/(DE|TR)$/i.test(b.lang)?1:0)-(/(DE|TR)$/i.test(a.lang)?1:0);});
+    var s=c.filter(function(x){return x.name===saved;})[0];if(s)return s;
+    for(var i=0;i<prefer.length;i++){var p=c.filter(function(x){return prefer[i].test(x.name);})[0];if(p)return p;}
+    return c.filter(function(x){return x.localService;})[0]||c[0];}
+  TTS.de=best(/^de([-_]DE)?/i,S.deV,[/premium|enhanced|erweitert/i,/Anna/,/Google Deutsch/,/Helena|Petra|Markus|Katja|Conrad/]);
+  TTS.tr=best(/^tr/i,S.trV,[/premium|enhanced/i,/Yelda/,/Google/]);
+}
+if("speechSynthesis" in window){pickVoices();speechSynthesis.onvoiceschanged=function(){pickVoices();if(st.tab==="me")render();};}
+function unlock(){if(unlocked||!("speechSynthesis" in window))return;unlocked=true;try{var u=new SpeechSynthesisUtterance(" ");u.volume=0;speechSynthesis.speak(u);}catch(e){}}
+function say(text,lang,opt){
+  opt=opt||{};
+  return new Promise(function(res){
+    if(!text||!("speechSynthesis" in window)){if(!("speechSynthesis" in window))toast("Bu tarayıcıda seslendirme yok.");res();return;}
+    var u=new SpeechSynthesisUtterance(text),tr=lang==="tr",v=tr?TTS.tr:TTS.de;
+    if(v)u.voice=v;u.lang=tr?"tr-TR":"de-DE";u.rate=opt.rate||(tr?1:S.rate);u.pitch=opt.pitch||1;
+    var done=false,t;function fin(){if(done)return;done=true;clearTimeout(t);res();}
+    u.onend=fin;u.onerror=fin;t=setTimeout(fin,3000+text.length*130/u.rate);
+    TTS.keep=u;speechSynthesis.speak(u);
+  });
+}
+function stopSpeech(){curRun++;st.auto=false;try{speechSynthesis.cancel();}catch(e){}}
+function sleep(ms,run){return new Promise(function(r){var t0=Date.now();var iv=setInterval(function(){if(run!==curRun||Date.now()-t0>=ms){clearInterval(iv);r();}},100);});}
+function playOne(text,lang,opt){stopSpeech();var run=curRun;setPlaying(true);
+  setTimeout(function(){say(text,lang,opt).then(function(){if(run===curRun)setPlaying(false);});},60);}
+function setPlaying(on){document.querySelectorAll(".play[data-live]").forEach(function(b){b.classList.toggle("on",on);});}
+
+/* ---------- Yardımcılar ---------- */
+var ICON={
+ play:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>',
+ spk:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 10v4h4l5 4V6L8 10z" fill="currentColor" stroke="none"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>',
+ stop:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6.5" y="6.5" width="11" height="11" rx="1.5"/></svg>',
+ left:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
+ right:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>',
+ turtle:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 15c0-4 3.5-7 8-7s7 3 7 6H4z"/><path d="M19 14l2-1M6 15l-1 3M16 15l1 3M9 9l1.5 5M15 9l-1.5 5"/></svg>'
+};
+function chips(it){var f=it[4]||"",h="";if(f.indexOf("c")>-1)h+='<span class="chip hot">Sık</span>';if(f.indexOf("s")>-1)h+='<span class="chip warn">Kendine göre</span>';return h;}
+function secStats(si){var s=SECS[si],k=0,r=0;s.items.forEach(function(_,i){var v=S.p[key(si,i)];if(v===2)k++;else if(v===1)r++;});return {k:k,r:r,n:s.items.length};}
+function toast(msg){var t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove();},2200);}
+function pad2(n){return (n<10?"0":"")+n;}
+
+/* ---------- Görünümler ---------- */
+function vStudyList(){
+  var tot=0,kn=0,re=0;SECS.forEach(function(s,si){var x=secStats(si);tot+=x.n;kn+=x.k;re+=x.r;});
+  var h='<h2 class="h">Soru bankası</h2><p class="sub">'+tot+' kart · '+kn+' biliyorum · '+re+' tekrar</p>';
+  if(re)h+='<button class="btn again wide" data-a="openAgain" style="margin-bottom:12px">Tekrar listemi çalış ('+re+')</button>';
+  h+='<div class="list">';
+  SECS.forEach(function(s,si){var x=secStats(si);
+    h+='<button class="row" data-a="open" data-v="'+si+'"><span class="no">'+pad2(si+1)+'</span><span style="min-width:0"><span class="t1">'+esc(s.de)+'</span><br><span class="t2">'+esc(s.tr)+'</span><span class="bar"><i style="width:'+(x.k/x.n*100)+'%"></i><i class="r" style="width:'+(x.r/x.n*100)+'%"></i></span></span><span class="ct">'+x.k+"/"+x.n+"</span></button>";});
+  return h+"</div>";
+}
+function curList(){
+  if(st.sec==="again"){var L=[];SECS.forEach(function(s,si){s.items.forEach(function(it,i){if(S.p[key(si,i)]===1)L.push([si,i]);});});return L;}
+  return SECS[st.sec].items.map(function(_,i){return [st.sec,i];});
+}
+function vCard(){
+  var L=curList();if(!L.length){st.sec=null;return vStudyList();}
+  if(st.idx>=L.length)st.idx=L.length-1;
+  var si=L[st.idx][0],i=L[st.idx][1],it=SECS[si].items[i],T=tokens(),p=isP(it),v=qv(it),mark=S.p[key(si,i)];
+  var title=st.sec==="again"?"Tekrar listem":SECS[si].de;
+  var h='<div class="hrow" style="margin-bottom:10px"><button class="btn ghost" data-a="back" aria-label="Bölümlere dön" style="padding:10px 6px">'+ICON.left+'</button><div style="min-width:0;flex:1"><div class="lab" lang="de">'+pad2(si+1)+" · "+esc(title)+'</div><div class="pos" style="text-align:left;margin-top:4px">'+(st.idx+1)+" / "+L.length+'</div></div>'+
+    '<button class="btn" data-a="auto" aria-pressed="'+st.auto+'">'+(st.auto?ICON.stop+"Durdur":ICON.spk+"Otomatik")+"</button></div>";
+  h+='<div class="card">';
+  h+='<div class="lab" lang="de"><b>'+(p?"Söyle":"Frage")+'</b>'+(p?"Türkçesi":"Soru")+'<span class="sp"></span>'+chips(it)+"</div>";
+  if(p){
+    h+='<div class="qrow"><button class="play sm" data-a="sayp" aria-label="Türkçesini dinle">'+ICON.play+'</button><p class="tr" style="font-size:21px;color:var(--ink)">'+fill(it[0],"t",T)+"</p></div>";
+  }else{
+    var hide=S.hideQ&&!st.rev&&!st.showQ;
+    h+='<div class="qrow"><button class="play" data-live="1" data-a="sayq" data-v="0" aria-label="Soruyu dinle">'+ICON.play+"</button>"+(hide?'<div><p class="blank" style="margin:0 0 6px">Önce dinle, anlamaya çalış.</p><button class="btn" data-a="showQ">Soruyu göster</button></div>':'<p class="de">'+esc(v[0])+"</p>")+"</div>";
+    if(!hide){
+      if(v.length>1){h+='<details class="var"><summary>Başka söylenişler ('+(v.length-1)+')</summary>';v.slice(1).forEach(function(x,j){h+='<div class="vline"><button class="play sm" data-a="sayq" data-v="'+(j+1)+'" aria-label="Dinle">'+ICON.play+"</button><span>"+esc(x)+"</span></div>";});h+="</details>";}
+      h+='<p class="tr">'+fill(it[1],"t",T)+"</p>";}
+  }
+  if(st.rev){
+    h+='<div class="ans"><div class="lab" lang="de"><b>Antwort</b>Cevap</div><div class="qrow"><button class="play sm" data-a="saya" aria-label="Cevabı dinle">'+ICON.play+'</button><p class="de a">'+showAlt(fill(it[2],"d",T))+"</p></div>";
+    if(!p&&it[3])h+='<p class="tr">'+showAlt(fill(it[3],"t",T))+"</p>";
+    if(it[5])h+='<p class="note">'+esc(it[5])+"</p>";
+    h+="</div>";
+  }else h+='<button class="btn pri wide" data-a="reveal">Cevabı göster</button>';
+  h+="</div>";
+  h+='<div class="grid2" style="margin-top:12px"><button class="btn again" data-a="mark" data-v="1" aria-pressed="'+(mark===1)+'">Tekrar et</button><button class="btn ok" data-a="mark" data-v="2" aria-pressed="'+(mark===2)+'">Biliyorum</button></div>';
+  h+='<div class="navr" style="margin-top:10px"><button class="btn" data-a="prev" aria-label="Önceki">'+ICON.left+'</button><span class="pos">'+(mark===2?"Biliyorum":mark===1?"Tekrar listesinde":"Yeni kart")+'</span><button class="btn" data-a="next" aria-label="Sonraki">'+ICON.right+"</button></div>";
+  if(st.auto)h+='<p class="sub" style="margin-top:12px;text-align:center">Soru → '+S.pause+' sn düşünme → cevap'+(S.readTr?" → Türkçesi":"")+'. Ekran açık kalmalı.</p>';
+  return h;
+}
+function ivPool(){
+  var L=[];SECS.forEach(function(s,si){s.items.forEach(function(it,i){if(isP(it))return;
+    var f=it[4]||"";if(S.ivPool==="core"&&f.indexOf("c")<0)return;if(S.ivPool==="again"&&S.p[key(si,i)]!==1)return;L.push([si,i]);});});return L;
+}
+function vInterview(){
+  var iv=st.iv,T=tokens(),h="";
+  if(iv.ph==="setup"){
+    var n=ivPool().length;
+    h+='<h2 class="h">Mülakat provası</h2><p class="sub">Memur gibi sorar, yazıyı gizler. Sen yüksek sesle cevap ver, sonra kontrol et.</p>';
+    h+='<div class="card"><div class="lab" lang="de">Soru sayısı</div><div class="seg">'+[5,10,15].map(function(x){return '<button class="btn" data-a="ivN" data-v="'+x+'" aria-pressed="'+(S.ivN===x)+'">'+x+"</button>";}).join("")+"</div>";
+    h+='<div class="lab" lang="de">Soru havuzu</div><div class="seg">'+[["core","Sık sorulan"],["all","Hepsi"],["again","Tekrarlarım"]].map(function(x){return '<button class="btn" data-a="ivPool" data-v="'+x[0]+'" aria-pressed="'+(S.ivPool===x[0])+'">'+x[1]+"</button>";}).join("")+"</div>";
+    h+='<p class="sub" style="margin:0">'+n+" soru içinden rastgele seçilir; her seferinde farklı söyleniş gelebilir.</p>";
+    h+='<button class="btn pri wide" data-a="ivStart"'+(n?"":' aria-disabled="true"')+">Başla</button></div>";
+    h+='<div class="hint" style="margin-top:12px"><button class="play sm" data-a="sayText" data-v="Können Sie das bitte wiederholen?" aria-label="Dinle">'+ICON.play+'</button><p>Anlamazsan: <b>Können Sie das bitte wiederholen?</b></p></div>';
+    return h;
+  }
+  if(iv.ph==="run"){
+    var c=iv.list[iv.k],it=SECS[c[0]].items[c[1]],q=qv(it)[c[2]];
+    h+='<div class="hrow"><div class="dots" aria-label="İlerleme">'+iv.list.map(function(x,j){return "<i class=\""+(j<iv.k?(iv.res[j]?"g":"h"):j===iv.k?"d":"")+"\"></i>";}).join("")+'</div><span class="sp"></span><span class="pos">'+(iv.k+1)+" / "+iv.list.length+"</span></div>";
+    h+='<div class="big-center"><button class="play big" data-live="1" data-a="ivSay" aria-label="Soruyu tekrar dinle">'+ICON.play+'</button><div class="hrow" style="justify-content:center"><button class="btn" data-a="ivSay">Tekrar</button><button class="btn" data-a="ivSlow">'+ICON.turtle+"Yavaş</button></div></div>";
+    h+='<div class="card">';
+    if(iv.txt||iv.shown)h+='<div class="lab" lang="de"><b>Frage</b>'+esc(SECS[c[0]].de)+'</div><p class="de">'+esc(q)+'</p><p class="tr">'+fill(it[1],"t",T)+"</p>";
+    else h+='<p class="blank" style="margin:0">Soru yazısı gizli. Dinle, yüksek sesle cevap ver.</p><button class="btn" data-a="ivTxt">Yazıyı göster</button>';
+    if(iv.shown){
+      h+='<div class="ans"><div class="lab" lang="de"><b>Antwort</b>Örnek cevap</div><div class="qrow"><button class="play sm" data-a="ivSayA" aria-label="Cevabı dinle">'+ICON.play+'</button><p class="de a">'+showAlt(fill(it[2],"d",T))+'</p></div><p class="tr">'+showAlt(fill(it[3],"t",T))+"</p></div>";
+      h+='</div><div class="grid2" style="margin-top:12px"><button class="btn again" data-a="ivRes" data-v="0">Zorlandım</button><button class="btn ok" data-a="ivRes" data-v="1">Anladım</button></div>';
+    }else h+='<button class="btn pri wide" data-a="ivShow">Cevabı göster</button></div>';
+    h+='<button class="btn ghost wide" data-a="ivQuit" style="margin-top:8px">Bitir</button>';
+    return h;
+  }
+  var ok=iv.res.filter(Boolean).length;
+  h+='<h2 class="h">Sonuç</h2><div class="card"><div class="hrow"><span class="score">'+ok+"/"+iv.res.length+'</span><span class="sub" style="margin:0">anladın.<br>Zorlandıkların tekrar listesine eklendi.</span></div>';
+  var bad=iv.list.slice(0,iv.res.length).filter(function(_,j){return !iv.res[j];});
+  if(bad.length){h+='<div class="lab" lang="de">Zorlandıkların</div>';bad.forEach(function(c){var it=SECS[c[0]].items[c[1]];h+='<div class="vline"><button class="play sm" data-a="sayText" data-v="'+esc(qv(it)[c[2]])+'" aria-label="Dinle">'+ICON.play+"</button><span>"+esc(qv(it)[c[2]])+"</span></div>";});}
+  h+='</div><div class="grid2" style="margin-top:12px"><button class="btn" data-a="ivSetup">Ayarlar</button><button class="btn pri" data-a="ivStart">Yeni tur</button></div>';
+  return h;
+}
+function vScenes(){
+  var T=tokens(),h="";
+  if(st.sc===null){
+    h+='<h2 class="h">Görüşme senaryoları</h2><p class="sub">Memur konuşur, sıra sende gelince durur. Söyle, sonra devam et.</p><div class="list">';
+    SCENES.forEach(function(s,j){h+='<button class="row" data-a="scOpen" data-v="'+j+'"><span class="no">S'+(j+1)+'</span><span style="min-width:0"><span class="t1">'+esc(s.t)+'</span><br><span class="t2">'+esc(fill(s.l[0][1],"s",T))+'</span></span><span class="ct">'+s.l.length+" satır</span></button>";});
+    return h+"</div>";
+  }
+  var sc=SCENES[st.sc],running=st.scCur>-1;
+  h+='<div class="hrow" style="margin-bottom:10px"><button class="btn ghost" data-a="scBack" aria-label="Senaryolara dön" style="padding:10px 6px">'+ICON.left+'</button><div style="flex:1;min-width:0"><div class="lab" lang="de">S'+(st.sc+1)+'</div><div class="t1" style="font-weight:600">'+esc(sc.t)+'</div></div><button class="btn '+(running?"":"pri")+'" data-a="scPlay">'+(running?ICON.stop+"Durdur":ICON.play+"Oynat")+"</button></div>";
+  h+='<div class="set" style="border:0;padding-top:0"><label for="scHide">Benim repliklerimi gizle</label><input type="checkbox" id="scHide" data-a="scHide"'+(S.scHide?" checked":"")+"></div>";
+  h+='<div class="stack">';
+  sc.l.forEach(function(ln,j){var me=ln[0]==="s",hid=me&&S.scHide&&!st.scRev[j];
+    h+='<button class="bub '+(me?"s":"")+(st.scCur===j?" cur":"")+'" data-a="scLine" data-v="'+j+'"><span class="who">'+(me?"Sen":"Memur")+"</span>"+(hid?'<span class="blank">'+(st.scCur===j?"Sıra sende. Söyle, sonra Devam'a bas.":"Dokun: kendi cevabını gör")+"</span>":'<span class="de">'+fill(ln[1],"d",T)+'</span><span class="tr">'+fill(ln[2],"t",T)+"</span>")+"</button>";});
+  h+="</div>";
+  if(st.scWait)h+='<button class="btn pri wide" data-a="scGo" style="margin-top:12px">Devam</button>';
+  return h;
+}
+function vMe(){
+  var f=S.f,h='<h2 class="h">Bilgilerim</h2><p class="sub">Cevaplardaki boşluklar buradan dolar. Sadece bu cihazda saklanır.</p><form class="fields card" onsubmit="return false">';
+  FIELDS.forEach(function(d){var full=d.opts||d.k==="anreise";h+='<div class="fld'+(d.opts?" full":"")+'"><label for="f_'+d.k+'">'+esc(d.l)+"</label>";
+    if(d.opts){h+='<select id="f_'+d.k+'" data-f="'+d.k+'">'+d.opts.map(function(o){return '<option value="'+esc(o[0])+'"'+(f[d.k]===o[0]?" selected":"")+">"+esc(o[0]?o[0]+" · "+o[1]:o[1])+"</option>";}).join("")+"</select>";}
+    else h+='<input id="f_'+d.k+'" data-f="'+d.k+'" type="'+(d.type==="number"?"text":(d.type||"text"))+'"'+(d.type==="number"||d.type==="tel"?' inputmode="numeric"':"")+' value="'+esc(f[d.k]||"")+'" placeholder="'+esc(d.ph||"")+'" autocomplete="off">';
+    h+="</div>";});
+  h+="</form>";
+  var dv=TTS.list.filter(function(v){return /^de/i.test(v.lang);}),tv=TTS.list.filter(function(v){return /^tr/i.test(v.lang);});
+  h+='<h2 class="h" style="margin-top:20px">Ses</h2><div class="card" style="gap:0">';
+  h+='<div class="set"><label for="rate">Konuşma hızı <span class="pos">'+S.rate.toFixed(2).replace(".",",")+'×</span></label><input id="rate" type="range" min="0.6" max="1.15" step="0.05" value="'+S.rate+'" data-s="rate"></div>';
+  h+='<div class="set"><label for="pause">Otomatikte düşünme süresi <span class="pos">'+S.pause+' sn</span></label><input id="pause" type="range" min="2" max="10" step="1" value="'+S.pause+'" data-s="pause"></div>';
+  h+='<div class="set"><label for="readTr">Otomatikte Türkçesini de oku</label><input id="readTr" type="checkbox" data-s="readTr"'+(S.readTr?" checked":"")+"></div>";
+  h+='<div class="set"><label for="hideQ">Kartlarda önce sadece dinle</label><input id="hideQ" type="checkbox" data-s="hideQ"'+(S.hideQ?" checked":"")+"></div>";
+  h+='<div class="set"><label for="deV">Almanca ses</label><select id="deV" data-s="deV">'+(dv.length?dv.map(function(v){return '<option'+(TTS.de&&TTS.de.name===v.name?" selected":"")+">"+esc(v.name)+"</option>";}).join(""):"<option>Bulunamadı</option>")+"</select></div>";
+  h+='<div class="set"><label for="trV">Türkçe ses</label><select id="trV" data-s="trV">'+(tv.length?tv.map(function(v){return '<option'+(TTS.tr&&TTS.tr.name===v.name?" selected":"")+">"+esc(v.name)+"</option>";}).join(""):"<option>Bulunamadı</option>")+"</select></div>";
+  h+='<div class="set"><span>Sesi dene</span><button class="btn" data-a="sayText" data-v="Guten Tag. Ich möchte eine Niederlassungserlaubnis beantragen.">'+ICON.spk+"Dinle</button></div></div>";
+  h+='<p class="sub" style="margin-top:8px">iPhone\'da daha doğal ses için: Ayarlar › Erişilebilirlik › Seslendirilen İçerik › Sesler › Almanca\'dan "Anna (Gelişmiş)" indir.</p>';
+  h+='<h2 class="h" style="margin-top:20px">Görüşme hakkında</h2><div class="card info"><ul>'+
+   "<li>27 ay Blue Card + A1 yolunda <b>Leben-in-Deutschland belgesi istenmiyor</b>; o yalnızca 21 ay + B1 yolunda.</li>"+
+   "<li>Kural sertifika. Görüşmede A1 açıkça görülürse sertifikadan vazgeçilebilir; bu memurun kararı, garanti değil.</li>"+
+   "<li>Süreç: online başvuru → görüşme daveti → belgelerin asılları → parmak izi, imza, fotoğraf → kart 2–4 haftada.</li>"+
+   "<li>Harç 113 €, yerinde biyometrik fotoğraf 6 €.</li>"+
+   "<li>Şartlarda ayrıca: yeterli oturma alanı, sabıka kaydı olmaması, yardımsız geçim, sağlık sigortası. Bu yüzden m², sabıka ve sosyal yardım soruları eklendi.</li>"+
+   "<li>Hamburg Welcome Center · Süderstraße 32b, 20097 Hamburg</li>"+
+   '</ul><a href="https://www.hamburg.com/publicservice/info/111204806/">Resmî sayfa: Blue Card ile kalıcı oturum</a></div>';
+  h+='<div style="margin-top:16px">'+(st.resetAsk?'<div class="grid2"><button class="btn" data-a="resetNo">Vazgeç</button><button class="btn again" data-a="resetYes">Evet, sıfırla</button></div>':'<button class="btn ghost wide" data-a="resetAsk">İlerlemeyi sıfırla</button>')+"</div>";
+  return h;
+}
+function header(){
+  var c=document.getElementById("tchip"),d=pd(S.f.termindatum);
+  if(d){var now=new Date();now.setHours(0,0,0,0);var t=new Date(d.y,d.m-1,d.d);var n=Math.round((t-now)/864e5);
+    c.className="chip hot";c.style.textTransform="none";c.textContent=n>0?"Termin · "+n+" gün":n===0?"Termin bugün":"Termin geçti";}
+  else{c.className="chip";c.textContent="§ 18c AufenthG";}
+}
+function render(){
+  var v=document.getElementById("view"),h;
+  if(st.tab==="study")h=st.sec===null?vStudyList():vCard();
+  else if(st.tab==="iv")h=vInterview();
+  else if(st.tab==="sc")h=vScenes();
+  else h=vMe();
+  v.innerHTML=h;header();
+  document.querySelectorAll(".tab").forEach(function(b){if(b.dataset.v===st.tab)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current");});
+}
+function toTop(){document.getElementById("view").scrollTop=0;}
+
+/* ---------- Otomatik dinleme ---------- */
+function autoRun(){
+  stopSpeech();var run=curRun;st.auto=true;st.rev=false;render();
+  (async function(){
+    var L=curList();
+    while(run===curRun&&st.idx<L.length){
+      var it=SECS[L[st.idx][0]].items[L[st.idx][1]],T=tokens();
+      st.rev=false;st.showQ=true;render();
+      if(isP(it))await say(speechText(it[0],T),"tr");else await say(speechText(qv(it)[0],T),"de");
+      if(run!==curRun)return;await sleep(S.pause*1000,run);if(run!==curRun)return;
+      st.rev=true;render();await say(speechText(it[2],T),"de");
+      if(run!==curRun)return;
+      if(S.readTr&&!isP(it)&&it[3]){await sleep(400,run);if(run!==curRun)return;await say(speechText(it[3],T),"tr");}
+      await sleep(1400,run);if(run!==curRun)return;
+      if(st.idx<L.length-1){st.idx++;toTop();}else break;
+    }
+    if(run===curRun){st.auto=false;render();}
+  })();
+  try{navigator.wakeLock&&navigator.wakeLock.request("screen").catch(function(){});}catch(e){}
+}
+
+/* ---------- Mülakat ---------- */
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function ivSayQ(rate){var iv=st.iv,c=iv.list[iv.k],it=SECS[c[0]].items[c[1]];playOne(speechText(qv(it)[c[2]]),"de",rate?{rate:rate}:null);}
+
+/* ---------- Senaryo oynatma ---------- */
+function scRun(){
+  stopSpeech();var run=curRun,sc=SCENES[st.sc];st.scRev={};
+  (async function(){
+    for(var j=0;j<sc.l.length;j++){
+      if(run!==curRun)return;var ln=sc.l[j];st.scCur=j;
+      if(ln[0]==="s"&&S.scHide){await new Promise(function(r){st.scWait=r;render();});if(run!==curRun)return;st.scWait=null;st.scRev[j]=true;render();await say(speechText(ln[1]),"de",{pitch:1.15});}
+      else{st.scRev[j]=true;render();await say(speechText(ln[1]),"de",ln[0]==="s"?{pitch:1.15}:null);}
+      await sleep(500,run);
+    }
+    if(run===curRun){st.scCur=-1;render();}
+  })();
+}
+function scStop(){stopSpeech();if(st.scWait){var r=st.scWait;st.scWait=null;r();}st.scCur=-1;}
+
+/* ---------- Olaylar ---------- */
+var A={
+ tab:function(d){stopSpeech();scStop();st.tab=d.v;st.resetAsk=false;render();toTop();},
+ open:function(d){st.sec=+d.v;st.idx=0;st.rev=false;st.showQ=false;render();toTop();},
+ openAgain:function(){st.sec="again";st.idx=0;st.rev=false;st.showQ=false;render();toTop();},
+ back:function(){stopSpeech();st.sec=null;render();toTop();},
+ reveal:function(){st.rev=true;render();var L=curList(),it=SECS[L[st.idx][0]].items[L[st.idx][1]];playOne(speechText(it[2]),"de");},
+ showQ:function(){st.showQ=true;render();},
+ sayq:function(d){var L=curList(),it=SECS[L[st.idx][0]].items[L[st.idx][1]];playOne(speechText(qv(it)[+d.v||0]),"de");},
+ saya:function(){var L=curList(),it=SECS[L[st.idx][0]].items[L[st.idx][1]];playOne(speechText(it[2]),"de");},
+ sayp:function(){var L=curList(),it=SECS[L[st.idx][0]].items[L[st.idx][1]];playOne(speechText(it[0]),"tr");},
+ sayText:function(d){playOne(d.v,"de");},
+ mark:function(d){var L=curList(),k=key(L[st.idx][0],L[st.idx][1]),v=+d.v;stopSpeech();
+   if(S.p[k]===v)delete S.p[k];else S.p[k]=v;save();
+   var again=st.sec==="again";var nl=curList();
+   if(again){if(st.idx>=nl.length)st.idx=Math.max(0,nl.length-1);}else if(st.idx<nl.length-1)st.idx++;
+   st.rev=false;st.showQ=false;render();toTop();},
+ prev:function(){stopSpeech();if(st.idx>0)st.idx--;st.rev=false;st.showQ=false;render();toTop();},
+ next:function(){stopSpeech();var L=curList();if(st.idx<L.length-1)st.idx++;st.rev=false;st.showQ=false;render();toTop();},
+ auto:function(){if(st.auto){stopSpeech();render();}else autoRun();},
+ ivN:function(d){S.ivN=+d.v;save();render();},
+ ivPool:function(d){S.ivPool=d.v;save();render();},
+ ivStart:function(){var P=ivPool();if(!P.length){toast("Bu havuzda soru yok.");return;}
+   var list=shuffle(P.slice()).slice(0,S.ivN).map(function(c){var n=qv(SECS[c[0]].items[c[1]]).length;return [c[0],c[1],Math.floor(Math.random()*n)];});
+   st.iv={ph:"run",list:list,k:0,res:[],shown:false,txt:false};render();toTop();ivSayQ();},
+ ivSay:function(){ivSayQ();},
+ ivSlow:function(){ivSayQ(0.65);},
+ ivTxt:function(){st.iv.txt=true;render();},
+ ivShow:function(){st.iv.shown=true;render();var c=st.iv.list[st.iv.k];playOne(speechText(SECS[c[0]].items[c[1]][2]),"de");},
+ ivSayA:function(){var c=st.iv.list[st.iv.k];playOne(speechText(SECS[c[0]].items[c[1]][2]),"de");},
+ ivRes:function(d){var iv=st.iv,c=iv.list[iv.k],k=key(c[0],c[1]);iv.res.push(d.v==="1");S.p[k]=d.v==="1"?2:1;save();
+   iv.k++;iv.shown=false;iv.txt=false;if(iv.k>=iv.list.length){iv.ph="done";stopSpeech();render();toTop();}else{render();toTop();ivSayQ();}},
+ ivQuit:function(){stopSpeech();st.iv.ph=st.iv.res.length?"done":"setup";render();toTop();},
+ ivSetup:function(){st.iv={ph:"setup"};render();},
+ scOpen:function(d){st.sc=+d.v;st.scRev={};st.scCur=-1;render();toTop();},
+ scBack:function(){scStop();st.sc=null;render();toTop();},
+ scPlay:function(){if(st.scCur>-1){scStop();render();}else scRun();},
+ scGo:function(){if(st.scWait){var r=st.scWait;st.scWait=null;r();}},
+ scLine:function(d){var j=+d.v,ln=SCENES[st.sc].l[j];if(st.scWait&&st.scCur===j){A.scGo();return;}if(st.scCur>-1)return;st.scRev[j]=true;render();playOne(speechText(ln[1]),"de",ln[0]==="s"?{pitch:1.15}:null);},
+ resetAsk:function(){st.resetAsk=true;render();},
+ resetNo:function(){st.resetAsk=false;render();},
+ resetYes:function(){S.p={};save();st.resetAsk=false;render();toast("İlerleme sıfırlandı");}
+};
+document.addEventListener("click",function(e){unlock();var b=e.target.closest("[data-a]");if(!b||b.tagName==="INPUT")return;if(b.getAttribute("aria-disabled")==="true")return;var f=A[b.dataset.a];if(f){e.preventDefault();f(b.dataset,b);}});
+document.addEventListener("input",function(e){var t=e.target;
+  if(t.dataset.f){S.f[t.dataset.f]=t.value;save();header();}
+  else if(t.dataset.s==="rate"||t.dataset.s==="pause"){S[t.dataset.s]=parseFloat(t.value);save();var lab=t.parentNode.querySelector(".pos");if(lab)lab.textContent=t.dataset.s==="rate"?S.rate.toFixed(2).replace(".",",")+"×":S.pause+" sn";}});
+document.addEventListener("change",function(e){var t=e.target;
+  if(t.dataset.f){S.f[t.dataset.f]=t.value;save();header();}
+  else if(t.dataset.s==="readTr"||t.dataset.s==="hideQ"){S[t.dataset.s]=t.checked;save();}
+  else if(t.dataset.s==="deV"||t.dataset.s==="trV"){S[t.dataset.s]=t.value;save();pickVoices();}
+  else if(t.dataset.a==="scHide"){S.scHide=t.checked;save();render();}});
+document.addEventListener("visibilitychange",function(){if(document.hidden){stopSpeech();scStop();}});
+render();
+</script>
+
+</body>
+</html>
